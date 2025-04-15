@@ -52,31 +52,32 @@ if ($tipoLogado === 'master') {
               <td data-label="Email"><?= $u['email'] ?></td>
               <td data-label="Tipo"><span class="badge bg-secondary"><?= ucfirst($u['tipo']) ?></span></td>
               <td data-label="Status">
-                <?php if($u['ativo']): ?>
+                <?php if ($u['ativo']): ?>
                   <span class="badge bg-success">Ativo</span>
                 <?php else: ?>
                   <span class="badge bg-danger">Inativo</span>
                 <?php endif; ?>
               </td>
               <td data-label="Ações">
-				  <?php if (podeEditarTipo($u['tipo'])): ?>
-					<a href="usuario_form.php?id=<?= $u['id'] ?>" class="btn btn-sm btn-outline-info" title="Editar">
-					  <i class="fas fa-edit"></i>
-					</a>
-					
-					<?php if ($u['id'] != $usuarioLogado['id']): ?>
-					  <a href="usuario_delete.php?id=<?= $u['id'] ?>" class="btn btn-sm btn-outline-danger" 
-						 onclick="return confirm('Deseja realmente excluir este usuário?')" title="Excluir">
-						<i class="fas fa-trash"></i>
-					  </a>
-					<?php else: ?>
-					  <button class="btn btn-sm btn-outline-secondary" onclick="alert('Você não pode excluir seu próprio usuário.')" title="Excluir" disabled>
-						<i class="fas fa-trash"></i>
-					  </button>
-					<?php endif; ?>
-					
-				  <?php endif; ?>
-				</td>
+                <?php if (podeEditarTipo($u['tipo'])): ?>
+                  <a href="usuario_form.php?id=<?= $u['id'] ?>" class="btn btn-sm btn-outline-info" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </a>
+
+                  <?php if ($u['id'] != $usuarioLogado['id']): ?>
+                    <a href="usuario_delete.php?id=<?= $u['id'] ?>" class="btn btn-sm btn-outline-danger"
+                      onclick="return confirm('Deseja realmente excluir este usuário?')" title="Excluir">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  <?php else: ?>
+                    <button class="btn btn-sm btn-outline-secondary"
+                      onclick="alert('Você não pode excluir seu próprio usuário.')" title="Excluir" disabled>
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  <?php endif; ?>
+
+                <?php endif; ?>
+              </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
@@ -84,5 +85,4 @@ if ($tipoLogado === 'master') {
     </div>
   </div>
 </div>
-
 <?php include '../includes/footer.php'; ?>

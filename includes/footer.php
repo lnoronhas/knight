@@ -35,50 +35,13 @@ include '../includes/defs.php';
   
   <!-- Custom Scripts -->
   <script src="../assets/js/scripts.js"></script>
-  
-<script>
-// Atualiza data/hora
-function updateDateTime() {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR');
-  document.getElementById('current-date').textContent = dateStr;
-}
-
-// Usando API do INMET (estações automáticas)
-async function fetchINMETWeather() {
-  try {
-    // Código da estação de Santa Maria (pode precisar atualização)
-    const response = await fetch('https://apitempo.inmet.gov.br/estacao/d/83936');
-    const data = await response.json();
-    
-    // Pega o último registro (array está ordenado por data)
-    const lastRecord = data[data.length - 1];
-    if(lastRecord && lastRecord.TEM_INS) {
-      document.getElementById('weather-temp').textContent = lastRecord.TEM_INS;
-    }
-  } catch (error) {
-    console.log('Falha ao acessar INMET, tentando alternativa...');
-    fallbackWeather();
-  }
-}
-
-// Fallback alternativo
-async function fallbackWeather() {
-  try {
-    const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-29.6842&longitude=-53.8069&current_weather=true');
-    const data = await response.json();
-    document.getElementById('weather-temp').textContent = Math.round(data.current_weather.temperature);
-  } catch (error) {
-    document.getElementById('weather-temp').textContent = '--';
-  }
-}
-
-// Inicia
-updateDateTime();
-fetchINMETWeather();
-setInterval(updateDateTime, 60000);
-setInterval(fetchINMETWeather, 300000);
-</script>
+  <script>
+       // Inicia
+      updateDateTime();
+      fetchINMETWeather();
+      setInterval(updateDateTime, 60000);
+      setInterval(fetchINMETWeather, 300000);
+  </script>
   
 </body>
 </html>

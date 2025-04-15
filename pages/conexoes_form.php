@@ -79,8 +79,13 @@ if (!$cliente_id) {
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="senha" class="form-label">Senha:</label>
-                    <input type="password" class="form-control" id="senha" name="senha"
-                        value="<?= $conexao['senha'] ?? '' ?>" required>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="senha" name="senha"
+                            value="<?= $conexao['senha'] ?? '' ?>" required>
+                        <button class="btn btn-outline-secondary toggle-password" type="button">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <label for="tipo_banco" class="form-label">Tipo de Banco:</label>
@@ -143,5 +148,6 @@ if (!$cliente_id) {
         </form>
     </div>
 </div>
+
 
 <?php include '../includes/footer.php'; ?>

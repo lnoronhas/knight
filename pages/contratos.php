@@ -35,29 +35,19 @@ $contratos = $pdo->query($query)->fetchAll();
       <table class="table table-dark table-striped table-hover table-knight">
         <thead>
           <tr>
-            <th scope="col" style="width: 30px;"></th>
+            
             <th scope="col">Nome</th>
-            <th scope="col">Bilhetagem</th>
-            <th scope="col">Qtd Bilhetagem</th>
+            <th scope="col" class="text-nowrap">Bilhetagem</th>
+            <th scope="col" class="text-nowrap">Qtd Bilhetagem</th>
             <th scope="col">Status</th>
-            <th scope="col">Cadastrado em</th>
+            <th scope="col" class="text-nowrap">Cadastrado em</th>
             <th scope="col">Ações</th>
+            <th scope="col" style="width: 30px;">Modalidades</th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($contratos as $c): ?>
-            <tr class="<?= $c['total_modalidades'] > 0 ? 'accordion-toggle' : '' ?>" <?= $c['total_modalidades'] > 0 ? 'data-bs-toggle="collapse" data-bs-target="#modalidades-' . $c['id'] . '"' : '' ?>>
-              <td>
-                <?php if ($c['total_modalidades'] > 0): ?>
-                  <button class="btn btn-sm btn-outline-info">
-                    <i class="fas fa-chevron-down"></i>
-                  </button>
-                <?php else: ?>
-                  <span class="btn btn-sm btn-outline-secondary" disabled>
-                    <i class="fas fa-minus"></i>
-                  </span>
-                <?php endif; ?>
-              </td>
+            <tr>
 
               <td data-label="Nome">
                 <?= $c['nome'] ?>
@@ -78,7 +68,11 @@ $contratos = $pdo->query($query)->fetchAll();
                   <span class="badge bg-secondary">Não</span>
                 <?php endif; ?>
               </td>
-              <td data-label="Qtd Bilhetagem"><?= $c['qtd_bilhetagem'] ?></td>
+              <td data-label="Qtd Bilhetagem" class="text-nowrap" style="min-width: 80px;">
+                <span class="d-inline-block" style="min-width: 30px; text-align: center;">
+                  <?= $c['qtd_bilhetagem'] ?>
+                </span>
+              </td>
               <td data-label="Status">
                 <?php if ($c['ativo']): ?>
                   <span class="badge bg-success">Ativo</span>
@@ -117,6 +111,19 @@ $contratos = $pdo->query($query)->fetchAll();
                     data-nome="<?= $c['nome'] ?>" data-ativo="<?= $c['ativo'] ?>" title="Desativar Contrato">
                     <i class="fas fa-power-off"></i>
                   </button>
+                <?php endif; ?>
+              </td>
+
+              <td data-label="Modalidades">
+                <?php if ($c['total_modalidades'] > 0): ?>
+                  <button class="btn btn-sm btn-outline-info handle-expand collapsed" data-bs-toggle="collapse"
+                    data-bs-target="#modalidades-<?= $c['id'] ?>" aria-expanded="false">
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                <?php else: ?>
+                  <span class="btn btn-sm btn-outline-secondary" disabled>
+                    <i class="fas fa-minus"></i>
+                  </span>
                 <?php endif; ?>
               </td>
             </tr>
@@ -242,101 +249,5 @@ $contratos = $pdo->query($query)->fetchAll();
     </div>
   </div>
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // Gerenciar modal para usuários master
-    const controleModal = new bootstrap.Modal(document.getElementById('controleContratoModal'));
-    const desativarModal = new bootstrap.Modal(document.getElementById('desativarContratoModal'));
-
-    // Botões de gerenciamento de contrato (para usuários master)
-    document.querySelectorAll('.handle-contrato-action').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const id = this.getAttribute('data-id');
-        const nome = this.getAttribute('data-nome');
-        const ativo = parseInt(this.getAttribute('data-ativo'));
-
-        document.getElementById('contrato-id-modal').value = id;
-        document.getElementById('contrato-nome-modal').textContent = nome;
-        document.getElementById('contrato-ativo-modal').value = ativo;
-
-        // Ajustar o texto do botão de desativar/ativar
-        const btnDesativar = document.getElementById('btn-desativar-texto');
-        if (ativo) {
-          btnDesativar.textContent = 'Desativar';
-        } else {
-          btnDesativar.textContent = 'Ativar';
-        }
-
-        controleModal.show();
-      });
-    });
-
-    // Botões de desativação (para outros usuários)
-    document.querySelectorAll('.desativar-contrato').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const id = this.getAttribute('data-id');
-        const nome = this.getAttribute('data-nome');
-        const ativo = parseInt(this.getAttribute('data-ativo'));
-
-        document.getElementById('contrato-id-desativar').value = id;
-        document.getElementById('contrato-nome-desativar').textContent = nome;
-        document.getElementById('contrato-acao').value = 'desativar';
-
-        // Ajustar o texto da ação
-        if (ativo) {
-          document.getElementById('acao-contrato-texto').textContent = 'desativar';
-        } else {
-          document.getElementById('acao-contrato-texto').textContent = 'ativar';
-        }
-
-        desativarModal.show();
-      });
-    });
-
-    // Ação de desativar/ativar do modal master
-    document.getElementById('btn-desativar-modal').addEventListener('click', function () {
-      const id = document.getElementById('contrato-id-modal').value;
-      const nome = document.getElementById('contrato-nome-modal').textContent;
-      const ativo = parseInt(document.getElementById('contrato-ativo-modal').value);
-
-      document.getElementById('contrato-id-desativar').value = id;
-      document.getElementById('contrato-nome-desativar').textContent = nome;
-      document.getElementById('contrato-acao').value = 'desativar';
-
-      // Ajustar o texto da ação
-      if (ativo) {
-        document.getElementById('acao-contrato-texto').textContent = 'desativar';
-      } else {
-        document.getElementById('acao-contrato-texto').textContent = 'ativar';
-      }
-
-      controleModal.hide();
-      desativarModal.show();
-    });
-
-    // Ação de apagar do modal master
-    document.getElementById('btn-apagar-modal').addEventListener('click', function () {
-      const id = document.getElementById('contrato-id-modal').value;
-      const nome = document.getElementById('contrato-nome-modal').textContent;
-
-      document.getElementById('contrato-id-desativar').value = id;
-      document.getElementById('contrato-nome-desativar').textContent = nome;
-      document.getElementById('contrato-acao').value = 'apagar';
-      document.getElementById('acao-contrato-texto').textContent = 'apagar permanentemente';
-
-      controleModal.hide();
-      desativarModal.show();
-    });
-
-    // Confirmação final
-    document.getElementById('btn-confirmar-desativar').addEventListener('click', function () {
-      const id = document.getElementById('contrato-id-desativar').value;
-      const acao = document.getElementById('contrato-acao').value;
-
-      window.location.href = `contratos_action.php?id=${id}&acao=${acao}`;
-    });
-  });
-</script>
 
 <?php include '../includes/footer.php'; ?>
