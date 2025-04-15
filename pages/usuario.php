@@ -27,35 +27,68 @@ if ($tipoLogado === 'master') {
 }
 ?>
 
-<h2>👥 Gerenciar Usuários</h2>
-<a href="usuario_form.php" class="btn">➕ Novo Usuário</a>
+<div class="row mb-4">
+  <div class="col-md-8">
+    <h2><i class="fas fa-users"></i> Gerenciar Usuários</h2>
+  </div>
+  <div class="col-md-4 text-md-end">
+    <a href="usuario_form.php" class="btn btn-knight">
+      <i class="fas fa-plus-circle"></i> Novo Usuário
+    </a>
+  </div>
+</div>
 
-<table>
-  <thead>
-    <tr>
-      <th>Nome</th>
-      <th>Email</th>
-      <th>Tipo</th>
-      <th>Status</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
-  <tbody>
-    <?php foreach ($usuarios as $u): ?>
-      <tr>
-        <td><?= $u['nome'] ?></td>
-        <td><?= $u['email'] ?></td>
-        <td><?= ucfirst($u['tipo']) ?></td>
-        <td><?= $u['ativo'] ? 'Ativo' : 'Inativo' ?></td>
-        <td>
-          <?php if (podeEditarTipo($u['tipo'])): ?>
-            <a href="usuario_form.php?id=<?= $u['id'] ?>">✏️</a>
-            <a href="usuario_delete.php?id=<?= $u['id'] ?>" onclick="return confirm('Deseja realmente excluir este usuário?')">🗑️</a>
-          <?php endif; ?>
-        </td>
-      </tr>
-    <?php endforeach; ?>
-  </tbody>
-</table>
+<div class="card bg-knight">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-dark table-striped table-hover table-knight">
+        <thead>
+          <tr>
+            <th scope="col">Nome</th>
+            <th scope="col">Email</th>
+            <th scope="col">Tipo</th>
+            <th scope="col">Status</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($usuarios as $u): ?>
+            <tr>
+              <td><?= $u['nome'] ?></td>
+              <td><?= $u['email'] ?></td>
+              <td><span class="badge bg-secondary"><?= ucfirst($u['tipo']) ?></span></td>
+              <td>
+                <?php if($u['ativo']): ?>
+                  <span class="badge bg-success">Ativo</span>
+                <?php else: ?>
+                  <span class="badge bg-danger">Inativo</span>
+                <?php endif; ?>
+              </td>
+              <td>
+				  <?php if (podeEditarTipo($u['tipo'])): ?>
+					<a href="usuario_form.php?id=<?= $u['id'] ?>" class="btn btn-sm btn-outline-info" title="Editar">
+					  <i class="fas fa-edit"></i>
+					</a>
+					
+					<?php if ($u['id'] != $usuarioLogado['id']): ?>
+					  <a href="usuario_delete.php?id=<?= $u['id'] ?>" class="btn btn-sm btn-outline-danger" 
+						 onclick="return confirm('Deseja realmente excluir este usuário?')" title="Excluir">
+						<i class="fas fa-trash"></i>
+					  </a>
+					<?php else: ?>
+					  <button class="btn btn-sm btn-outline-secondary" onclick="alert('Você não pode excluir seu próprio usuário.')" title="Excluir" disabled>
+						<i class="fas fa-trash"></i>
+					  </button>
+					<?php endif; ?>
+					
+				  <?php endif; ?>
+				</td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <?php include '../includes/footer.php'; ?>

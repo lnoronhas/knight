@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle sidebar on mobile
+    // Bootstrap já tem toggle para sidebar, mas mantemos nossa própria implementação caso seja necessário
     const sidebarToggle = document.querySelector('.sidebar-toggle');
     const sidebar = document.querySelector('.sidebar');
     
@@ -9,10 +9,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    // Inicializar tooltips do Bootstrap
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+    
+    // Inicializar popovers do Bootstrap
+    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+    const popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl)
     });
     
     // Handle form submissions with AJAX
@@ -24,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...';
             submitBtn.disabled = true;
             
             fetch(this.action, {
@@ -56,35 +62,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Show alert function
+    // Função showAlert usando componentes Bootstrap
     function showAlert(type, message) {
         const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.textContent = message;
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
         
         const container = document.querySelector('.container') || document.body;
         container.prepend(alertDiv);
         
+        // Auto-close after 5 seconds
         setTimeout(() => {
-            alertDiv.remove();
+            const bsAlert = new bootstrap.Alert(alertDiv);
+            bsAlert.close();
         }, 5000);
     }
     
-    // Handle modal forms
-    document.querySelectorAll('[data-modal-target]').forEach(button => {
+    // Bootstrap já tem implementação de modal, mas adaptamos nossa implementação personalizada
+    document.querySelectorAll('[data-bs-toggle="modal"]').forEach(button => {
         button.addEventListener('click', function() {
-            const target = this.dataset.modalTarget;
-            const modal = document.querySelector(target);
+            const target = this.getAttribute('data-bs-target');
+            const modalElement = document.querySelector(target);
             
-            if (modal) {
-                modal.classList.add('active');
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
             }
-        });
-    });
-    
-    document.querySelectorAll('.modal-close').forEach(button => {
-        button.addEventListener('click', function() {
-            this.closest('.modal').classList.remove('active');
         });
     });
 });
