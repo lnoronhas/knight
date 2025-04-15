@@ -91,31 +91,28 @@ if ($id) {
         foreach ($modalidadesContrato as $mc) {
           $modalidadesMap[$mc['modalidade_id']] = $mc;
         }
-        
-        if (empty($modalidades)): 
         ?>
-          <div class="alert alert-warning">
-            Nenhuma modalidade cadastrada no sistema. <a href="modalidades.php">Cadastre modalidades</a> antes de continuar.
-          </div>
-        <?php else: ?>
-          <div class="row mb-3">
-            <div class="col-md-4"><strong>Modalidade</strong></div>
-            <div class="col-md-4"><strong>Quantidade</strong></div>
-            <div class="col-md-4"><strong>Adicionar?</strong></div>
-          </div>
-          
+        
+        <div class="row mb-3">
+          <div class="col-md-3"><strong>Modalidade</strong></div>
+          <div class="col-md-3"><strong>Quantidade</strong></div>
+          <div class="col-md-3"><strong>Adicionar?</strong></div>
+          <div class="col-md-3"></div>
+        </div>
+        
+        <?php if (!empty($modalidades)): ?>
           <?php foreach ($modalidades as $m): ?>
-            <div class="row mb-3 modalidade-item">
-              <div class="col-md-4">
+            <div class="row mb-3 modalidade-item existing-modalidade">
+              <div class="col-md-3">
                 <?= $m['sigla'] ?> - <?= $m['nome'] ?>
                 <input type="hidden" name="modalidades[<?= $m['id'] ?>][modalidade_id]" value="<?= $m['id'] ?>">
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <input type="number" class="form-control" name="modalidades[<?= $m['id'] ?>][quantidade]" 
                        value="<?= isset($modalidadesMap[$m['id']]) ? $modalidadesMap[$m['id']]['quantidade'] : '' ?>"
                        <?= isset($modalidadesMap[$m['id']]) ? '' : 'disabled' ?>>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <div class="form-check form-switch">
                   <input class="form-check-input toggle-modalidade" type="checkbox" role="switch" 
                          id="modalidade_<?= $m['id'] ?>" 
@@ -124,9 +121,47 @@ if ($id) {
                   <label class="form-check-label" for="modalidade_<?= $m['id'] ?>">Incluir</label>
                 </div>
               </div>
+              <div class="col-md-3"></div>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
+        
+        <!-- Template para novas modalidades -->
+        <div id="new-modalidades">
+          <!-- Novas modalidades serão adicionadas aqui -->
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col-12">
+            <button type="button" class="btn btn-outline-info" id="add-new-modalidade">
+              <i class="fas fa-plus"></i> Adicionar Nova Modalidade
+            </button>
+          </div>
+        </div>
+        
+        <!-- Template para nova modalidade (oculto) -->
+        <template id="new-modalidade-template">
+          <div class="row mb-3 modalidade-item new-modalidade">
+            <div class="col-md-3">
+              <div class="input-group">
+                <input type="text" class="form-control" name="novas_modalidades[{index}][sigla]" placeholder="Sigla" maxlength="20" required>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="input-group">
+                <input type="number" class="form-control" name="novas_modalidades[{index}][quantidade]" placeholder="Quantidade" required>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <input type="text" class="form-control" name="novas_modalidades[{index}][nome]" placeholder="Nome da Modalidade" maxlength="100" required>
+            </div>
+            <div class="col-md-3">
+              <button type="button" class="btn btn-outline-danger remove-modalidade">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </template>
       </div>
       
       <div class="d-flex justify-content-between mt-4">
@@ -143,7 +178,7 @@ if ($id) {
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Configurar toggles de modalidades
+    // Configurar toggles de modalidades existentes
     document.querySelectorAll('.toggle-modalidade').forEach(toggle => {
       toggle.addEventListener('change', function() {
         const modalidadeId = this.getAttribute('data-modalidade-id');
@@ -158,6 +193,29 @@ if ($id) {
           quantidadeInput.required = false;
         }
       });
+    });
+    
+    // Adicionar nova modalidade
+    let newModalidadeIndex = 0;
+    const addModalidadeBtn = document.getElementById('add-new-modalidade');
+    const newModalidadesContainer = document.getElementById('new-modalidades');
+    const modalidadeTemplate = document.getElementById('new-modalidade-template').content;
+    
+    addModalidadeBtn.addEventListener('click', function() {
+      const clone = document.importNode(modalidadeTemplate, true);
+      
+      // Substituir o placeholder {index} pelo índice atual
+      clone.querySelectorAll('[name*="{index}"]').forEach(input => {
+        input.name = input.name.replace('{index}', newModalidadeIndex);
+      });
+      
+      // Configurar o botão de remover
+      clone.querySelector('.remove-modalidade').addEventListener('click', function() {
+        this.closest('.modalidade-item').remove();
+      });
+      
+      newModalidadesContainer.appendChild(clone);
+      newModalidadeIndex++;
     });
   });
 </script>

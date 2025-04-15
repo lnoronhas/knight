@@ -13,6 +13,7 @@ $bilhetagem = isset($_POST['bilhetagem']) ? (int)$_POST['bilhetagem'] : 0;
 $qtd_bilhetagem = $_POST['qtd_bilhetagem'];
 $ativo = isset($_POST['ativo']) ? 1 : 0;
 $modalidades = $_POST['modalidades'] ?? [];
+$novasModalidades = $_POST['novas_modalidades'] ?? [];
 
 // Início da transação
 $pdo->beginTransaction();
@@ -26,6 +27,34 @@ try {
     $stmt = $pdo->prepare("INSERT INTO clientes (nome, bilhetagem, qtd_bilhetagem, ativo, criado_em, atualizado_em) VALUES (?, ?, ?, ?, NOW(), NOW())");
     $stmt->execute([$nome, $bilhetagem, $qtd_bilhetagem, $ativo]);
     $id = $pdo->lastInsertId();
+  }
+  
+  // Processar novas modalidades (inserir na tabela modalidades)
+  foreach ($novasModalidades as $novaModalidade) {
+    if (!empty($novaModalidade['sigla']) && !empty($novaModalidade['nome'])) {
+      // Verificar se a sigla já existe
+      $stmt = $pdo->prepare("SELECT id FROM modalidades WHERE sigla = ?");
+      $stmt->execute([$novaModalidade['sigla']]);
+      $existingModalidade = $stmt->fetch();
+      
+      if ($existingModalidade) {
+        // Usar a modalidade existente
+        $modalidadeId = $existingModalidade['id'];
+      } else {
+        // Inserir nova modalidade
+        $stmt = $pdo->prepare("INSERT INTO modalidades (sigla, nome) VALUES (?, ?)");
+        $stmt->execute([$novaModalidade['sigla'], $novaModalidade['nome']]);
+        $modalidadeId = $pdo->lastInsertId();
+      }
+      
+      // Associar nova modalidade ao cliente
+      if (!empty($novaModalidade['quantidade'])) {
+        $modalidades[$modalidadeId] = [
+          'modalidade_id' => $modalidadeId,
+          'quantidade' => $novaModalidade['quantidade']
+        ];
+      }
+    }
   }
   
   // Remover todas as modalidades existentes para este cliente

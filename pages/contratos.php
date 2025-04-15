@@ -94,10 +94,24 @@ function getModalidadesCliente($clienteId) {
                 <a href="contratos_form.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-outline-info" title="Editar">
                   <i class="fas fa-edit"></i>
                 </a>
-                <a href="contratos_delete.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-outline-danger" 
-                   onclick="return confirm('Deseja realmente excluir este contrato?')" title="Excluir">
-                  <i class="fas fa-trash"></i>
-                </a>
+                
+                <?php if ($tipoLogado === 'master'): ?>
+                  <button type="button" class="btn btn-sm btn-outline-danger handle-contrato-action" 
+                         data-id="<?= $c['id'] ?>" 
+                         data-nome="<?= $c['nome'] ?>" 
+                         data-ativo="<?= $c['ativo'] ?>" 
+                         title="Gerenciar Contrato">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                <?php else: ?>
+                  <button type="button" class="btn btn-sm btn-outline-danger desativar-contrato" 
+                         data-id="<?= $c['id'] ?>" 
+                         data-nome="<?= $c['nome'] ?>" 
+                         data-ativo="<?= $c['ativo'] ?>" 
+                         title="Desativar Contrato">
+                    <i class="fas fa-power-off"></i>
+                  </button>
+                <?php endif; ?>
               </td>
             </tr>
             <?php if ($c['total_modalidades'] > 0): ?>
@@ -136,5 +150,148 @@ function getModalidadesCliente($clienteId) {
     </div>
   </div>
 </div>
+
+<!-- Modal para usuários Master - Escolher entre Apagar ou Desativar -->
+<div class="modal fade" id="controleContratoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-light">
+      <div class="modal-header">
+        <h5 class="modal-title">Gerenciar Contrato</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Escolha a ação para o contrato <strong id="contrato-nome-modal"></strong>:</p>
+        <input type="hidden" id="contrato-id-modal" value="">
+        <input type="hidden" id="contrato-ativo-modal" value="">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-warning" id="btn-desativar-modal">
+          <i class="fas fa-power-off"></i> <span id="btn-desativar-texto">Desativar</span>
+        </button>
+        <button type="button" class="btn btn-danger" id="btn-apagar-modal">
+          <i class="fas fa-trash"></i> Apagar Permanentemente
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmação para desativação -->
+<div class="modal fade" id="desativarContratoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-light">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirmar Ação</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Você tem certeza que deseja <span id="acao-contrato-texto">desativar</span> o contrato <strong id="contrato-nome-desativar"></strong>?</p>
+        <input type="hidden" id="contrato-id-desativar" value="">
+        <input type="hidden" id="contrato-acao" value="desativar">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirmar-desativar">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Gerenciar modal para usuários master
+    const controleModal = new bootstrap.Modal(document.getElementById('controleContratoModal'));
+    const desativarModal = new bootstrap.Modal(document.getElementById('desativarContratoModal'));
+    
+    // Botões de gerenciamento de contrato (para usuários master)
+    document.querySelectorAll('.handle-contrato-action').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const id = this.getAttribute('data-id');
+        const nome = this.getAttribute('data-nome');
+        const ativo = parseInt(this.getAttribute('data-ativo'));
+        
+        document.getElementById('contrato-id-modal').value = id;
+        document.getElementById('contrato-nome-modal').textContent = nome;
+        document.getElementById('contrato-ativo-modal').value = ativo;
+        
+        // Ajustar o texto do botão de desativar/ativar
+        const btnDesativar = document.getElementById('btn-desativar-texto');
+        if (ativo) {
+          btnDesativar.textContent = 'Desativar';
+        } else {
+          btnDesativar.textContent = 'Ativar';
+        }
+        
+        controleModal.show();
+      });
+    });
+    
+    // Botões de desativação (para outros usuários)
+    document.querySelectorAll('.desativar-contrato').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const id = this.getAttribute('data-id');
+        const nome = this.getAttribute('data-nome');
+        const ativo = parseInt(this.getAttribute('data-ativo'));
+        
+        document.getElementById('contrato-id-desativar').value = id;
+        document.getElementById('contrato-nome-desativar').textContent = nome;
+        document.getElementById('contrato-acao').value = 'desativar';
+        
+        // Ajustar o texto da ação
+        if (ativo) {
+          document.getElementById('acao-contrato-texto').textContent = 'desativar';
+        } else {
+          document.getElementById('acao-contrato-texto').textContent = 'ativar';
+        }
+        
+        desativarModal.show();
+      });
+    });
+    
+    // Ação de desativar/ativar do modal master
+    document.getElementById('btn-desativar-modal').addEventListener('click', function() {
+      const id = document.getElementById('contrato-id-modal').value;
+      const nome = document.getElementById('contrato-nome-modal').textContent;
+      const ativo = parseInt(document.getElementById('contrato-ativo-modal').value);
+      
+      document.getElementById('contrato-id-desativar').value = id;
+      document.getElementById('contrato-nome-desativar').textContent = nome;
+      document.getElementById('contrato-acao').value = 'desativar';
+      
+      // Ajustar o texto da ação
+      if (ativo) {
+        document.getElementById('acao-contrato-texto').textContent = 'desativar';
+      } else {
+        document.getElementById('acao-contrato-texto').textContent = 'ativar';
+      }
+      
+      controleModal.hide();
+      desativarModal.show();
+    });
+    
+    // Ação de apagar do modal master
+    document.getElementById('btn-apagar-modal').addEventListener('click', function() {
+      const id = document.getElementById('contrato-id-modal').value;
+      const nome = document.getElementById('contrato-nome-modal').textContent;
+      
+      document.getElementById('contrato-id-desativar').value = id;
+      document.getElementById('contrato-nome-desativar').textContent = nome;
+      document.getElementById('contrato-acao').value = 'apagar';
+      document.getElementById('acao-contrato-texto').textContent = 'apagar permanentemente';
+      
+      controleModal.hide();
+      desativarModal.show();
+    });
+    
+    // Confirmação final
+    document.getElementById('btn-confirmar-desativar').addEventListener('click', function() {
+      const id = document.getElementById('contrato-id-desativar').value;
+      const acao = document.getElementById('contrato-acao').value;
+      
+      window.location.href = `contratos_action.php?id=${id}&acao=${acao}`;
+    });
+  });
+</script>
 
 <?php include '../includes/footer.php'; ?>
