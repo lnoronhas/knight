@@ -94,35 +94,35 @@ if ($id) {
         ?>
         
         <div class="row mb-3">
-          <div class="col-md-3"><strong>Modalidade</strong></div>
-          <div class="col-md-3"><strong>Quantidade</strong></div>
-          <div class="col-md-3"><strong>Adicionar?</strong></div>
-          <div class="col-md-3"></div>
-        </div>
+		  <div class="col-md-4"><strong>Modalidade</strong></div>
+		  <div class="col-md-3"><strong>Quantidade</strong></div>
+		  <div class="col-md-3"><strong>Incluir</strong></div>
+		  <div class="col-md-2"></div>
+		</div>
         
         <?php if (!empty($modalidades)): ?>
           <?php foreach ($modalidades as $m): ?>
             <div class="row mb-3 modalidade-item existing-modalidade">
-              <div class="col-md-3">
-                <?= $m['sigla'] ?> - <?= $m['nome'] ?>
-                <input type="hidden" name="modalidades[<?= $m['id'] ?>][modalidade_id]" value="<?= $m['id'] ?>">
-              </div>
-              <div class="col-md-3">
-                <input type="number" class="form-control" name="modalidades[<?= $m['id'] ?>][quantidade]" 
-                       value="<?= isset($modalidadesMap[$m['id']]) ? $modalidadesMap[$m['id']]['quantidade'] : '' ?>"
-                       <?= isset($modalidadesMap[$m['id']]) ? '' : 'disabled' ?>>
-              </div>
-              <div class="col-md-3">
-                <div class="form-check form-switch">
-                  <input class="form-check-input toggle-modalidade" type="checkbox" role="switch" 
-                         id="modalidade_<?= $m['id'] ?>" 
-                         data-modalidade-id="<?= $m['id'] ?>"
-                         <?= isset($modalidadesMap[$m['id']]) ? 'checked' : '' ?>>
-                  <label class="form-check-label" for="modalidade_<?= $m['id'] ?>">Incluir</label>
-                </div>
-              </div>
-              <div class="col-md-3"></div>
-            </div>
+			  <div class="col-md-4">
+				<?= $m['sigla'] ?> - <?= $m['nome'] ?>
+				<input type="hidden" name="modalidades[<?= $m['id'] ?>][modalidade_id]" value="<?= $m['id'] ?>">
+			  </div>
+			  <div class="col-md-3">
+				<input type="number" class="form-control" name="modalidades[<?= $m['id'] ?>][quantidade]" 
+					   value="<?= isset($modalidadesMap[$m['id']]) ? $modalidadesMap[$m['id']]['quantidade'] : '' ?>"
+					   <?= isset($modalidadesMap[$m['id']]) ? '' : 'disabled' ?>>
+			  </div>
+			  <div class="col-md-3">
+				<div class="form-check form-switch">
+				  <input class="form-check-input toggle-modalidade" type="checkbox" role="switch" 
+						 id="modalidade_<?= $m['id'] ?>" 
+						 data-modalidade-id="<?= $m['id'] ?>"
+						 <?= isset($modalidadesMap[$m['id']]) ? 'checked' : '' ?>>
+				  <label class="form-check-label" for="modalidade_<?= $m['id'] ?>"></label>
+				</div>
+			  </div>
+			  <div class="col-md-2"></div>
+			</div>
           <?php endforeach; ?>
         <?php endif; ?>
         
@@ -141,27 +141,26 @@ if ($id) {
         
         <!-- Template para nova modalidade (oculto) -->
         <template id="new-modalidade-template">
-          <div class="row mb-3 modalidade-item new-modalidade">
-            <div class="col-md-3">
-              <div class="input-group">
-                <input type="text" class="form-control" name="novas_modalidades[{index}][sigla]" placeholder="Sigla" maxlength="20" required>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="input-group">
-                <input type="number" class="form-control" name="novas_modalidades[{index}][quantidade]" placeholder="Quantidade" required>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <input type="text" class="form-control" name="novas_modalidades[{index}][nome]" placeholder="Nome da Modalidade" maxlength="100" required>
-            </div>
-            <div class="col-md-3">
-              <button type="button" class="btn btn-outline-danger remove-modalidade">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-          </div>
-        </template>
+		  <div class="row mb-3 modalidade-item new-modalidade">
+			<div class="col-md-4">
+				<label class="form-label">Nome</label>
+				<input type="text" class="form-control" name="novas_modalidades[{index}][nome]" placeholder="Nome da Modalidade" maxlength="100" required>
+			</div>
+			<div class="col-md-3">
+				<label class="form-label">Quantidade</label>
+				<input type="number" class="form-control" name="novas_modalidades[{index}][quantidade]" placeholder="Quantidade" required>
+			</div>
+			<div class="col-md-3">
+				<label class="form-label">Sigla</label>
+				<input type="text" class="form-control" name="novas_modalidades[{index}][sigla]" placeholder="Sigla" maxlength="20" required>
+			</div>
+			<div class="col-md-2 d-flex align-items-end">
+			  <button type="button" class="btn btn-outline-danger remove-modalidade">
+				<i class="fas fa-trash"></i>
+			  </button>
+			</div>
+		  </div>
+		</template>
       </div>
       
       <div class="d-flex justify-content-between mt-4">
@@ -218,6 +217,25 @@ if ($id) {
       newModalidadeIndex++;
     });
   });
+  
+  document.getElementById('bilhetagem_sim').addEventListener('change', function() {
+    document.getElementById('qtd_bilhetagem').disabled = !this.checked;
+    document.getElementById('qtd_bilhetagem').required = this.checked;
+	});
+
+	document.getElementById('bilhetagem_nao').addEventListener('change', function() {
+		document.getElementById('qtd_bilhetagem').disabled = this.checked;
+		document.getElementById('qtd_bilhetagem').required = !this.checked;
+	});
+
+	// Verificar estado inicial ao carregar a página
+	document.addEventListener('DOMContentLoaded', function() {
+		const bilhetagemNao = document.getElementById('bilhetagem_nao');
+		if (bilhetagemNao.checked) {
+			document.getElementById('qtd_bilhetagem').disabled = true;
+			document.getElementById('qtd_bilhetagem').required = false;
+		}
+	});
 </script>
 
 <?php include '../includes/footer.php'; ?>

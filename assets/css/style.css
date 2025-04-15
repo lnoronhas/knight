@@ -153,3 +153,9 @@ footer {
     border-bottom: none;
   }
 }
+
+#qtd_bilhetagem:disabled {
+    background-color: #87888a;
+    opacity: 1;
+    cursor: not-allowed;
+}
