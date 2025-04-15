@@ -1,7 +1,7 @@
 /* Estilos complementares ao Bootstrap - Tema Escuro Personalizado */
 :root {
   --dark-bg: #0a0a0a;
-  --dark-container: #161b22;
+  --dark-container: #364254;
   --dark-border: #30363d;
   --dark-text: #e0e0e0;
   --accent-color: #58a6ff;
@@ -10,7 +10,7 @@
 }
 
 body {
-  background: radial-gradient(ellipse at center, #0a0a0a 0%, #000000 100%);
+  background: radial-gradient(ellipse at center, #272629 0%, #272629 100%);
   color: var(--dark-text);
   min-height: 100vh;
   display: flex;
@@ -106,4 +106,50 @@ footer {
   border-top: 1px solid var(--dark-border);
   padding: 1rem;
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .table-knight {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .table-knight thead {
+    display: none;
+  }
+  
+  .table-knight tbody, 
+  .table-knight tr, 
+  .table-knight td {
+    display: block;
+    width: 100%;
+  }
+  
+  .table-knight tr {
+    margin-bottom: 1rem;
+    border: 1px solid #495057;
+    border-radius: 0.25rem;
+  }
+  
+  .table-knight td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #495057;
+    position: relative;
+    padding-left: 50%;
+  }
+  
+  .table-knight td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0.75rem;
+    width: 45%;
+    padding-right: 1rem;
+    font-weight: bold;
+    text-align: left;
+  }
+  
+  .table-knight td:last-child {
+    border-bottom: none;
+  }
 }

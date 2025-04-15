@@ -1,8 +1,9 @@
 <?php
-  session_start();
-  if (isset($_SESSION['usuario'])) {
-    header('Location: ../pages/dashboard.php');
-    exit();
+	include '../includes/defs.php';
+	session_start();
+	if (isset($_SESSION['usuario'])) {
+		header('Location: ../pages/dashboard.php');
+	exit();
   }
 
   $erro = $_GET['erro'] ?? null;

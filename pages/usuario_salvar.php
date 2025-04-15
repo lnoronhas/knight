@@ -1,6 +1,7 @@
 <?php
 include '../includes/db.php';
 include '../includes/functions.php';
+include '../includes/defs.php';
 session_start();
 
 $usuarioLogado = $_SESSION['usuario'];

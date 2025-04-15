@@ -1,6 +1,7 @@
 <?php
 include '../includes/header.php';
 include '../includes/db.php';
+include '../includes/defs.php';
 
 $usuarioLogado = $_SESSION['usuario'];
 $tipoLogado = $usuarioLogado['tipo'];
