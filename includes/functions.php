@@ -115,3 +115,4 @@ function calcularProximaExecucao($dadosAgendamento) {
   $now->setTime($hora->format('H'), $hora->format('i'));
   return $now->format('Y-m-d H:i:s');
 }
+

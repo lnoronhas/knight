@@ -20,6 +20,7 @@ $usuario = $_POST['usuario'];
 $senha = $_POST['senha'];
 $tipo_banco = $_POST['tipo_banco'];
 $versao_infra = $_POST['versao_infra'];
+$dbname = $_POST['dbname'];
 
 try {
     $pdo->beginTransaction();
@@ -27,15 +28,16 @@ try {
     if ($id) {
         // Atualizar conexão existente
         $stmt = $pdo->prepare("UPDATE conexoes SET 
-                              ipv6 = ?, usuario = ?, senha = ?, tipo_banco = ?, versao_infra = ?
+                              ipv6 = ?, usuario = ?, senha = ?, tipo_banco = ?, 
+                              versao_infra = ?, dbname = ?
                               WHERE id = ?");
-        $stmt->execute([$ipv6, $usuario, $senha, $tipo_banco, $versao_infra, $id]);
+        $stmt->execute([$ipv6, $usuario, $senha, $tipo_banco, $versao_infra, $dbname, $id]);
     } else {
         // Criar nova conexão
         $stmt = $pdo->prepare("INSERT INTO conexoes 
-                              (cliente_id, ipv6, usuario, senha, tipo_banco, versao_infra) 
-                              VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$cliente_id, $ipv6, $usuario, $senha, $tipo_banco, $versao_infra]);
+                              (cliente_id, ipv6, usuario, senha, tipo_banco, versao_infra, dbname) 
+                              VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$cliente_id, $ipv6, $usuario, $senha, $tipo_banco, $versao_infra, $dbname]);
     }
 
     $pdo->commit();

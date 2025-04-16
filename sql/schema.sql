@@ -54,10 +54,14 @@ CREATE TABLE `agendamentos_checagem` (
   `ativo` tinyint(1) DEFAULT 1,
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   `criado_por` int(11) DEFAULT NULL,
+  `todos_clientes` tinyint(1) DEFAULT 1 COMMENT '1 para todos clientes, 0 para seleção específica',
+  `clientes_ids` text DEFAULT NULL COMMENT 'IDs dos clientes separados por vírgula quando todos_clientes=0',
+  `ultima_execucao` datetime DEFAULT NULL COMMENT 'Data/hora da última execução',
+  `proxima_execucao` datetime DEFAULT NULL COMMENT 'Data/hora da próxima execução calculada',
   PRIMARY KEY (`id`),
   KEY `criado_por` (`criado_por`),
   CONSTRAINT `agendamentos_checagem_ibfk_1` FOREIGN KEY (`criado_por`) REFERENCES `usuarios` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- knight.checagens definition

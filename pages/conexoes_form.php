@@ -98,7 +98,13 @@ if (!$cliente_id) {
                     </select>
                 </div>
             </div>
-
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="dbname" class="form-label">Nome do Banco:</label>
+                    <input type="text" class="form-control" id="dbname" name="dbname"
+                        value="<?= $conexao['dbname'] ?? 'pacsdb' ?>" required>
+                </div>
+            </div>
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">Versão da Infra:</label>
