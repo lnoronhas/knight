@@ -29,7 +29,7 @@ try {
     $id = $pdo->lastInsertId();
     
     // Criar pastas para o novo contrato
-    $pastaContrato = "../contratos/" . preg_replace('/[^a-zA-Z0-9-_]/', '', $nome);
+    $pastaContrato = "../contratos/" . sanitizeFolderName($nome);
     if (!file_exists($pastaContrato)) {
         mkdir($pastaContrato, 0777, true);
         mkdir($pastaContrato . "/checagens", 0777);

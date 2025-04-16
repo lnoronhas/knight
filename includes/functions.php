@@ -36,4 +36,12 @@ function getModalidadesCliente($clienteId)
   return $stmt->fetchAll();
 }
 
+function sanitizeFolderName($name) {
+  // Remove acentos e caracteres especiais
+  $name = preg_replace('/[^a-zA-Z0-9\s]/', '', $name);
+  // Substitui espaços por underlines
+  $name = str_replace(' ', '_', $name);
+  return $name;
+}
+
 ?>

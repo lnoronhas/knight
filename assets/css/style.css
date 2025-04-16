@@ -212,3 +212,7 @@ footer {
   height: 80vh;
   border: 1px solid #ddd;
 }
+
+.input-group-text i {
+  color: white; /* ou outra cor visível */
+}

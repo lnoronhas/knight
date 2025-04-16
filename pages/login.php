@@ -40,7 +40,7 @@
         <label for="email" class="form-label">Usuário:</label>
         <div class="input-group">
           <span class="input-group-text bg-dark border-secondary">
-            <i class="fas fa-user"></i>
+            <i class="fas fa-user text-white"></i>
           </span>
           <input type="email" class="form-control" name="email" id="email" required>
         </div>

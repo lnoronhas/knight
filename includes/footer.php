@@ -7,7 +7,7 @@ include '../includes/defs.php';
     <div class="row align-items-center justify-content-between g-2">
       <!-- Botão Home - Esquerda -->
       <div class="col-auto">
-        <a href="../pages/dashboard.php" class="btn btn-info btn-sm">
+        <a href="../pages/dashboard.php" class="btn btn-success btn-sm">
           <i class="fas fa-home"></i> <span class="d-none d-sm-inline">Home</span>
         </a>
       </div>

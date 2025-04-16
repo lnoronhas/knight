@@ -8,7 +8,7 @@ $contratoNome = $_GET['nome'];
 $arquivoNome = $_GET['arquivo'];
 $visualizar = isset($_GET['visualizar']) ? true : false; // Novo parâmetro
 
-$pastaContrato = "../contratos/" . preg_replace('/[^a-zA-Z0-9-_]/', '', $contratoNome) . "/files/";
+$pastaContrato = "../contratos/" . sanitizeFolderName($contratoNome) . "/files/";
 $caminhoCompleto = $pastaContrato . $arquivoNome;
 
 if (file_exists($caminhoCompleto)) {

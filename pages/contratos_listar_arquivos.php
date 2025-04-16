@@ -21,7 +21,7 @@ if (empty($contratoId) || empty($contratoNome)) {
 }
 
 // Verificar se diretório existe
-$dirPath = "../contratos/" . $contratoNome . "/files";
+$dirPath = "../contratos/" . sanitizeFolderName($contratoNome) . "/files";
 
 if (!file_exists($dirPath)) {
     // Criar pasta se não existir

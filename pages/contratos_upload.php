@@ -35,9 +35,7 @@ if (!$stmt->fetch()) {
 }
 
 // Sanitizar nome do contrato para uso em pasta
-$pastaNome = preg_replace('/[^a-zA-Z0-9-_]/', '', $contratoNome);
-
-// Configurar diretório para upload
+$pastaNome = sanitizeFolderName($contratoNome);
 $dirPath = "../contratos/" . $pastaNome . "/files";
 
 // Criar diretório se não existir
