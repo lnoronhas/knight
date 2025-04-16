@@ -50,15 +50,7 @@ $contratos = $pdo->query($query)->fetchAll();
             <tr>
 
               <td data-label="Nome">
-                <?= $c['nome'] ?>
-                <?php
-                $stmt = $pdo->prepare("SELECT COUNT(*) FROM conexoes WHERE cliente_id = ?");
-                $stmt->execute([$c['id']]);
-                if ($stmt->fetchColumn() > 0): ?>
-                  <span class="badge bg-info" title="Possui conexão cadastrada">
-                    <i class="fas fa-link"></i>
-                  </span>
-                <?php endif; ?>
+                <?= $c['nome'] ?>                
               </td>
 
               <td data-label="Bilhetagem">
@@ -78,6 +70,14 @@ $contratos = $pdo->query($query)->fetchAll();
                   <span class="badge bg-success">Ativo</span>
                 <?php else: ?>
                   <span class="badge bg-danger">Inativo</span>
+                <?php endif; ?>
+                <?php
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM conexoes WHERE cliente_id = ?");
+                $stmt->execute([$c['id']]);
+                if ($stmt->fetchColumn() > 0): ?>
+                  <span class="badge bg-danger" title="Possui conexão cadastrada">
+                    <i class="fas fa-link"></i>
+                  </span>
                 <?php endif; ?>
               </td>
               <td data-label="Cadastrado em"><?= date('d/m/Y', strtotime($c['criado_em'])) ?></td>
@@ -114,7 +114,7 @@ $contratos = $pdo->query($query)->fetchAll();
                 <?php endif; ?>
                 <button type="button" class="btn btn-sm btn-info btn-arquivos-new"
                   onclick="abrirModalArquivos(<?= $c['id'] ?>, '<?= htmlspecialchars($c['nome'], ENT_QUOTES) ?>')">
-                  <i class="fas fa-file"></i> Arquivos
+                  <i class="fas fa-file fa-lg"></i>
                 </button>
               </td>
 

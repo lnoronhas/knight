@@ -22,7 +22,7 @@ include '../includes/defs.php';
 
       <!-- Botão Voltar - Direita -->
       <div class="col-auto">
-        <a href="javascript:history.back()" class="btn btn-secondary btn-sm">
+        <a href="javascript:history.back()" class="btn btn-warning btn-sm">
           <i class="fas fa-arrow-left"></i> <span class="d-none d-sm-inline">Voltar</span>
         </a>
       </div>
