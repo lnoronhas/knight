@@ -32,7 +32,7 @@ if (empty($arquivo) || empty($contratoNome) || empty($contratoId)) {
 }
 
 // Caminho do arquivo
-$filePath = "../contratos/" . $contratoNome . "/files/" . $arquivo;
+$filePath = "../contratos/" . sanitizeFolderName($contratoNome) . "/files/" . $arquivo;
 
 // Verificar se o arquivo existe
 if (!file_exists($filePath)) {
