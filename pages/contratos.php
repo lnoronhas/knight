@@ -1,5 +1,6 @@
 <?php
 include '../includes/header.php';
+include '../includes/search.php';
 include '../includes/db.php';
 include '../includes/defs.php';
 include '../includes/functions.php';
@@ -15,6 +16,8 @@ $query = "SELECT c.*, COUNT(cm.id) as total_modalidades
           ORDER BY c.nome";
 
 $contratos = $pdo->query($query)->fetchAll();
+
+$contratos = aplicarBuscaGlobal(null, 'nome', $contratos);
 
 ?>
 
@@ -418,5 +421,25 @@ $contratos = $pdo->query($query)->fetchAll();
         });
     }
   }
+
+  // Garantir que todos os modais sejam fechados corretamente
+document.addEventListener('DOMContentLoaded', function() {
+    // Fechar modais quando clicar no backdrop
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                bootstrap.Modal.getInstance(this).hide();
+            }
+        });
+    });
+    
+    // Limpar backdrop quando modal for escondido
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('hidden.bs.modal', function() {
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+        });
+    });
+});
 </script>
 <?php include '../includes/footer.php'; ?>

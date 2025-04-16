@@ -351,3 +351,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
+// Controle da seleção de clientes
+document.getElementById('todosClientes').addEventListener('change', function() {
+    const listaClientes = document.getElementById('listaClientesContainer');
+    const checkboxes = document.querySelectorAll('.cliente-checkbox');
+    
+    if (this.checked) {
+        listaClientes.style.display = 'none';
+        checkboxes.forEach(checkbox => checkbox.checked = false);
+    } else {
+        listaClientes.style.display = 'block';
+    }
+});
+
+// Desmarcar "Todos" quando selecionar um cliente específico
+document.querySelectorAll('.cliente-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        if (this.checked) {
+            document.getElementById('todosClientes').checked = false;
+        }
+    });
+});
+

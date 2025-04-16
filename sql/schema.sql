@@ -12,7 +12,7 @@ CREATE TABLE `clientes` (
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   `atualizado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- knight.modalidades definition
@@ -23,7 +23,7 @@ CREATE TABLE `modalidades` (
   `nome` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `sigla` (`sigla`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- knight.usuarios definition
@@ -38,7 +38,26 @@ CREATE TABLE `usuarios` (
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- knight.agendamentos_checagem definition
+
+CREATE TABLE `agendamentos_checagem` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `dia_semana` enum('segunda','terca','quarta','quinta','sexta','sabado','domingo') DEFAULT NULL,
+  `dia_mes` int(2) DEFAULT NULL COMMENT 'Dia fixo do mês (1-31)',
+  `primeira_semana` tinyint(1) DEFAULT 0 COMMENT 'Agendar na primeira semana do mês',
+  `data_inicio` date DEFAULT NULL,
+  `data_fim` date DEFAULT NULL,
+  `hora_execucao` time DEFAULT '00:00:00',
+  `ativo` tinyint(1) DEFAULT 1,
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
+  `criado_por` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `criado_por` (`criado_por`),
+  CONSTRAINT `agendamentos_checagem_ibfk_1` FOREIGN KEY (`criado_por`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- knight.checagens definition
@@ -67,7 +86,7 @@ CREATE TABLE `clientes_modalidades` (
   KEY `modalidade_id` (`modalidade_id`),
   CONSTRAINT `clientes_modalidades_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`),
   CONSTRAINT `clientes_modalidades_ibfk_2` FOREIGN KEY (`modalidade_id`) REFERENCES `modalidades` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- knight.conexoes definition
@@ -83,4 +102,4 @@ CREATE TABLE `conexoes` (
   PRIMARY KEY (`id`),
   KEY `cliente_id` (`cliente_id`),
   CONSTRAINT `conexoes_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

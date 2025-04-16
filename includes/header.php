@@ -1,34 +1,41 @@
 <?php
 include '../includes/defs.php';
-  session_start();
-  if (!isset($_SESSION['usuario'])) {
-    header('Location: ../pages/login.php');
-    exit();
-  }
+session_start();
+if (!isset($_SESSION['usuario'])) {
+  header('Location: ../pages/login.php');
+  exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Knight - Controle de Equipamentos</title>
-  
+
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-  
+
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- icons bootstrap -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="../assets/css/style.css">
-  
+
   <link rel="icon" href="/assets/img/favicon.ico" type="image/x-icon">
+
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+    rel="stylesheet" />
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
 </head>
+
 <body>
   <header>
     <nav class="navbar navbar-expand-lg navbar-dark navbar-knight">
@@ -36,8 +43,8 @@ include '../includes/defs.php';
         <a class="navbar-brand" href="../pages/dashboard.php">
           <i class="fas fa-satellite"></i> Knight - Painel de Controle
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+          aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">

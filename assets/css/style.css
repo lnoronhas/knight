@@ -216,3 +216,58 @@ footer {
 .input-group-text i {
   color: white; /* ou outra cor visível */
 }
+
+#listaClientesContainer {
+  transition: all 0.3s ease;
+}
+
+.cliente-checkbox {
+  margin-right: 8px;
+}
+
+.form-check-label {
+  user-select: none; /* Evita seleção de texto ao clicar */
+}
+
+/* Tema escuro customizado para Select2 */
+.select2-container--bootstrap-5 .select2-dropdown {
+  background-color: #343a40;
+  border-color: #f0ed61;
+}
+
+.select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field {
+  background-color: #212529;
+  border-color: #f0ed61;
+  color: #f8f9fa;
+}
+
+.select2-container--bootstrap-5 .select2-results__option {
+  color: #f8f9fa;
+  padding: 6px 12px;
+}
+
+.select2-container--bootstrap-5 .select2-results__option--highlighted {
+  background-color: #f0ed61;
+  color: white;
+}
+
+.select2-container--bootstrap-5 .select2-selection {
+  background-color: #212529;
+  border-color: #f0ed61;
+  color: #f8f9fa;
+}
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+  background-color: #f0ed61;
+  border-color: #6c757d;
+  color: white;
+}
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+  color: #adb5bd;
+  margin-right: 4px;
+}
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
+  color: white;
+}
