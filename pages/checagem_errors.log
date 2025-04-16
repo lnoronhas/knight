@@ -6,3 +6,5 @@
 [16-Apr-2025 18:23:21 America/Sao_Paulo] Conexão estabelecida com sucesso
 [16-Apr-2025 18:25:41 America/Sao_Paulo] Tentando conectar com DSN: mysql:host=[fd55:afaf::360:0:1];port=3306;dbname=pacsdb
 [16-Apr-2025 18:25:42 America/Sao_Paulo] Conexão estabelecida com sucesso
+[16-Apr-2025 18:45:39 America/Sao_Paulo] Tentando conectar com DSN: mysql:host=[fd55:afaf::360:0:1];port=3306;dbname=pacsdb
+[16-Apr-2025 18:45:39 America/Sao_Paulo] Conexão estabelecida com sucesso

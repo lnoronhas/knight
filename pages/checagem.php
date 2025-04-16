@@ -13,7 +13,8 @@ $agendamentoAtivo = $pdo->query("SELECT * FROM agendamentos_checagem WHERE ativo
 
 // Buscar todos os clientes com informações da última checagem
 $query = "SELECT c.*, 
-          ch.id as checagem_id, ch.data as ultima_checagem, ch.resultado_json,
+          ch.id as checagem_id, ch.data as ultima_checagem, 
+          ch.resultado_json, ch.status, 
           (SELECT COUNT(*) FROM checagens WHERE cliente_id = c.id) as total_checagens
           FROM clientes c
           LEFT JOIN checagens ch ON ch.id = (
@@ -101,33 +102,17 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                             <td data-label="Cliente"><?= $cliente['nome'] ?></td>
 
                             <td data-label="Status">
-                                <?php
-                                // Verificar se há agendamento para este cliente
-                                $agendamentoCliente = $pdo->prepare("
-                                    SELECT * FROM agendamentos_checagem 
-                                    WHERE ativo = 1 AND (
-                                        todos_clientes = 1 OR 
-                                        FIND_IN_SET(?, clientes_ids) OR
-                                        clientes_ids LIKE ? OR 
-                                        clientes_ids LIKE ? OR 
-                                        clientes_ids LIKE ?
-                                    )
-                                ");
-                                $agendamentoCliente->execute([
-                                    $cliente['id'],
-                                    $cliente['id'] . ',%',
-                                    '%,' . $cliente['id'] . ',%',
-                                    '%,' . $cliente['id']
-                                ]);
-                                $temAgendamento = $agendamentoCliente->fetch();
-
-                                // Verificar se o cliente tem checagem agendada
-                                if ($cliente['ultima_checagem']):
-                                    $resultado = json_decode($cliente['resultado_json'], true);
-                                    $status = $resultado['status'] ?? 'desconhecido';
-                                    $cor = ($status === 'sucesso') ? 'success' : (($status === 'erro') ? 'danger' : 'warning');
+                                <?php if ($cliente['ultima_checagem']): ?>
+                                    <?php
+                                    // Define as cores baseadas no status armazenado no banco
+                                    $cor = match ($cliente['status']) {
+                                        'sucesso' => 'success',
+                                        'erro' => 'danger',
+                                        'aviso' => 'warning',
+                                        default => 'secondary'
+                                    };
                                     ?>
-                                    <span class="badge bg-<?= $cor ?>"><?= ucfirst($status) ?></span>
+                                    <span class="badge bg-<?= $cor ?>"><?= ucfirst($cliente['status']) ?></span>
                                 <?php else: ?>
                                     <span class="badge bg-secondary">Nunca checado</span>
                                 <?php endif; ?>
@@ -196,23 +181,33 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                                                         <tbody>
                                                             <?php
                                                             $historico = $pdo->prepare("SELECT * FROM checagens 
-                           WHERE cliente_id = ? 
-                           ORDER BY data DESC 
-                           LIMIT 10");
+                                WHERE cliente_id = ? 
+                                ORDER BY data DESC 
+                                LIMIT 10");
                                                             $historico->execute([$cliente['id']]);
                                                             while ($checagem = $historico->fetch()):
+                                                                // Usar o status diretamente da tabela checagens em vez do JSON
+                                                                $status = $checagem['status'] ?? 'desconhecido';
+                                                                $cor = match ($status) {
+                                                                    'sucesso' => 'success',
+                                                                    'erro' => 'danger',
+                                                                    'aviso' => 'warning',
+                                                                    default => 'secondary'
+                                                                };
+
+                                                                // Ainda podemos pegar o resumo do JSON se necessário
                                                                 $resultado = json_decode($checagem['resultado_json'], true);
-                                                                $status = $resultado['status'] ?? 'desconhecido';
-                                                                $cor = ($status === 'sucesso') ? 'success' : (($status === 'erro') ? 'danger' : 'warning');
+                                                                $resumo = $checagem['resumo'] ?? ($resultado['resumo'] ?? '-');
                                                                 ?>
                                                                 <tr>
                                                                     <td class="text-nowrap">
                                                                         <?= date('d/m/Y H:i', strtotime($checagem['data'])) ?>
                                                                     </td>
-                                                                    <td><span
+                                                                    <td>
+                                                                        <span
                                                                             class="badge bg-<?= $cor ?>"><?= ucfirst($status) ?></span>
                                                                     </td>
-                                                                    <td><?= htmlspecialchars($resultado['resumo'] ?? '-') ?></td>
+                                                                    <td><?= htmlspecialchars($resumo) ?></td>
                                                                     <td class="text-nowrap">
                                                                         <button class="btn btn-sm btn-info btn-relatorio"
                                                                             onclick="mostrarDetalhesChecagem(<?= $checagem['id'] ?>)">
@@ -716,90 +711,78 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
     }
 
     function formatarResultadosChecagem(resultado) {
-        // Verificação mais robusta dos dados
-        if (!resultado || !resultado.detalhes) {
-            return '<div class="alert alert-warning">Dados da checagem não disponíveis ou em formato inválido</div>';
+        // Verificação inicial dos dados
+        if (!resultado) {
+            return '<div class="alert alert-warning">Dados da checagem não disponíveis</div>';
         }
 
-        const { status = [], aparelhos = [] } = resultado.detalhes;
+        let html = '<div class="mb-3">';
 
-        // Verificação adicional se status existe
-        if (!Array.isArray(status)) {
-            console.error("Estrutura de dados inesperada:", resultado);
-            return '<div class="alert alert-warning">Formato de dados inesperado</div>';
-        }
-
-        let html = `
-        <div class="mb-3">
-            <h5>Resumo: ${resultado.resumo || 'Nenhum resumo disponível'}</h5>
+        // Verificar qual tipo de resultado temos
+        if (resultado.status_aparelhos) {
+            // Formato "cadastrados"
+            html += `
+            <h5>Status dos Aparelhos Cadastrados</h5>
             <div class="table-responsive">
                 <table class="table table-sm table-dark">
                     <thead>
                         <tr>
-                            <th>Aparelho</th>
+                            <th>Aparelho (AET)</th>
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-    `;
+                    <tbody>`;
 
-        status.forEach(aparelho => {
-            if (!aparelho) return;
-
-            const badgeClass = aparelho.situacao === 'ENVIANDO' ? 'success' :
-                (aparelho.situacao === 'SEM ENVIOS' ? 'secondary' : 'warning');
-            html += `
-            <tr>
-                <td>${aparelho.aet || 'N/A'}</td>
-                <td><span class="badge bg-${badgeClass}">${aparelho.situacao || 'DESCONHECIDO'}</span></td>
-            </tr>
-        `;
-        });
-
-        html += `
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-
-        // Se houver informações adicionais nos aparelhos
-        if (Array.isArray(aparelhos) && aparelhos.length > 0) {
-            html += `
-            <div class="mt-4">
-                <h5>Detalhes dos Aparelhos</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm table-dark">
-                        <thead>
-                            <tr>
-                                <th>Aparelho</th>
-                                <th>IP</th>
-                                <th>Porta</th>
-                                <th>Última Checagem</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-
-            aparelhos.forEach(aparelho => {
+            resultado.status_aparelhos.forEach(aparelho => {
+                const badgeClass = aparelho.situacao === 'ENVIANDO' ? 'success' :
+                    (aparelho.situacao === 'SEM ENVIOS' ? 'secondary' : 'warning');
                 html += `
                 <tr>
-                    <td>${aparelho.nome || 'N/A'}</td>
-                    <td>${aparelho.ip || 'N/A'}</td>
-                    <td>${aparelho.porta || 'N/A'}</td>
-                    <td>${aparelho.ultima_checagem || 'N/A'}</td>
-                </tr>
-            `;
+                    <td>${aparelho.aet || 'N/A'}</td>
+                    <td><span class="badge bg-${badgeClass}">${aparelho.situacao || 'DESCONHECIDO'}</span></td>
+                </tr>`;
             });
 
+            html += `</tbody></table></div>`;
+
+        } else if (resultado.detalhes_aparelhos) {
+            // Formato "completa"
             html += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+            <h5>Detalhes Completo dos Aparelhos</h5>
+            <div class="table-responsive">
+                <table class="table table-sm table-dark">
+                    <thead>
+                        <tr>
+                            <th>Aparelho (AET)</th>
+                            <th>Descrição</th>
+                            <th>Nome da Estação</th>
+                            <th>Modalidade</th>
+                            <th>IP</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            resultado.detalhes_aparelhos.forEach(aparelho => {
+                const badgeClass = aparelho.SITUACAO === 'COM ENVIOS' ? 'success' : 'warning';
+                html += `
+                <tr>
+                    <td>${aparelho.aet || 'N/A'}</td>
+                    <td>${aparelho.ae_desc || 'N/A'}</td>
+                    <td>${aparelho.station_name || 'N/A'}</td>
+                    <td>${aparelho.modality || 'N/A'}</td>
+                    <td>${aparelho.ip || 'N/A'}</td>
+                    <td><span class="badge bg-${badgeClass}">${aparelho.SITUACAO || 'DESCONHECIDO'}</span></td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+        } else {
+            // Formato desconhecido
+            return '<div class="alert alert-warning">Formato de dados não reconhecido</div>';
         }
 
+        html += '</div>';
         return html;
     }
 

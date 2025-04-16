@@ -1,5 +1,6 @@
 <?php
-while (ob_get_level()) ob_end_clean();
+while (ob_get_level())
+    ob_end_clean();
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
@@ -65,22 +66,25 @@ try {
 
     // 3. Registrar a checagem no banco de dados
     $stmt = $pdo->prepare("INSERT INTO checagens 
-                      (cliente_id, data, resultado_json, tipo_checagem, status, resumo) 
-                      VALUES (?, NOW(), ?, ?, ?, ?)");
+                  (cliente_id, data, resultado_json, tipo_checagem, status, resumo) 
+                  VALUES (?, NOW(), ?, ?, ?, ?)");
+
+    // Checagem cadastrados
     $stmt->execute([
-        $clienteId, 
+        $clienteId,
         json_encode(['status_aparelhos' => $resultado['detalhes']['status_aparelhos']]),
         'cadastrados',
         $resultado['status'],
-        $resultado['resumo']
+        $resultado['resumo_cadastrados'] ?? $resultado['resumo']
     ]);
 
+    // Checagem completa
     $stmt->execute([
-        $clienteId, 
+        $clienteId,
         json_encode(['detalhes_aparelhos' => $resultado['detalhes']['detalhes_aparelhos']]),
         'completa',
         $resultado['status'],
-        $resultado['resumo']
+        $resultado['resumo_completa'] ?? $resultado['resumo']
     ]);
 
     // 4. Retornar resposta de sucesso
@@ -103,11 +107,12 @@ try {
 }
 
 // Funções específicas para cada tipo de checagem
-function checarMySQLAtual($cliente) {
+function checarMySQLAtual($cliente)
+{
     try {
         $pdo = conectarBancoCliente($cliente);
-        
-        // Query 1: Status de envio dos aparelhos
+
+        // Query 1: Status de envio dos aparelhos (para checagem 'cadastrados')
         $queryStatus = "SELECT
             a.aet,
             CASE
@@ -119,8 +124,8 @@ function checarMySQLAtual($cliente) {
                 ON asi.ae_title = a.aet
                 AND asi.datetime > DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
             GROUP BY a.aet";
-        
-        // Query 2: Detalhes dos aparelhos
+
+        // Query 2: Detalhes dos aparelhos (para checagem 'completa')
         $queryAparelhos = "SELECT
             a.aet,
             a.ae_desc,
@@ -168,13 +173,17 @@ function checarMySQLAtual($cliente) {
         $status = $pdo->query($queryStatus)->fetchAll(PDO::FETCH_ASSOC);
         $aparelhos = $pdo->query($queryAparelhos)->fetchAll(PDO::FETCH_ASSOC);
 
-        // Contar situações para resumo
+        // Contar situações para resumos diferentes
         $comEnvios = count(array_filter($status, fn($item) => $item['situacao'] === 'ENVIANDO'));
         $semEnvios = count($status) - $comEnvios;
 
+        // Contar aparelhos com envios na checagem completa
+        $comEnviosCompleta = count(array_filter($aparelhos, fn($item) => $item['SITUACAO'] === 'COM ENVIOS'));
+
         return [
             'status' => 'sucesso',
-            'resumo' => "$comEnvios aparelhos enviando, $semEnvios sem envios",
+            'resumo_cadastrados' => "$comEnvios aparelhos enviando, $semEnvios sem envios",
+            'resumo_completa' => "$comEnviosCompleta aparelhos com envios",
             'detalhes' => [
                 'status_aparelhos' => $status,
                 'detalhes_aparelhos' => $aparelhos
@@ -218,10 +227,11 @@ function checarPostgresLegado($cliente)
     ];
 }
 
-function conectarBancoCliente($cliente) {
+function conectarBancoCliente($cliente)
+{
     try {
         $port = $cliente['tipo_banco'] === 'mysql' ? 3306 : 5432;
-        
+
         // Formatar o IPv6 corretamente
         $ipv6 = $cliente['ipv6'];
         if (strpos($ipv6, ':') !== false && !preg_match('/^\[.+\]$/', $ipv6)) {
@@ -229,20 +239,20 @@ function conectarBancoCliente($cliente) {
         }
 
         $dbname = $cliente['dbname'] ?? 'pacsdb';
-        
+
         $dsn = "{$cliente['tipo_banco']}:host={$ipv6};port={$port};dbname={$dbname}";
-        
+
         error_log("Tentando conectar com DSN: $dsn");
-        
+
         $pdo = new PDO($dsn, $cliente['usuario'], $cliente['senha'], [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_TIMEOUT => 10,
             PDO::ATTR_PERSISTENT => false
         ]);
-        
+
         error_log("Conexão estabelecida com sucesso");
         return $pdo;
-        
+
     } catch (PDOException $e) {
         error_log("Erro de conexão completo: " . $e->getMessage());
         throw new Exception("Não foi possível conectar ao banco: " . $e->getMessage());
