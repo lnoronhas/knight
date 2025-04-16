@@ -30,13 +30,10 @@ include '../includes/defs.php';
   </div>
 </footer>
 
-<!-- jQuery primeiro -->
+<!-- jQuery primeiro (apenas uma vez) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<!-- Depois Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- Bootstrap Bundle with Popper -->
+<!-- Apenas um Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Custom Scripts -->

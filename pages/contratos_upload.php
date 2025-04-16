@@ -1,39 +1,71 @@
 <?php
+// Incluir necessários
 include '../includes/db.php';
+include '../includes/defs.php';
 include '../includes/functions.php';
+
+// Validar acesso
 session_start();
+if (!isset($_SESSION['usuario'])) {
+    echo json_encode(['success' => false, 'message' => 'Acesso não autorizado']);
+    exit;
+}
 
-$usuarioLogado = $_SESSION['usuario'];
-$contratoId = $_POST['contrato_id'];
+// Verificar se há arquivo enviado
+if (!isset($_FILES['arquivo']) || $_FILES['arquivo']['error'] != 0) {
+    echo json_encode(['success' => false, 'message' => 'Nenhum arquivo enviado ou erro no upload']);
+    exit;
+}
 
-// Buscar nome do contrato
-$stmt = $pdo->prepare("SELECT nome FROM clientes WHERE id = ?");
+// Obter dados do formulário
+$contratoId = $_POST['contrato_id'] ?? 0;
+$contratoNome = $_POST['contrato_nome'] ?? '';
+
+if (empty($contratoId) || empty($contratoNome)) {
+    echo json_encode(['success' => false, 'message' => 'Informações de contrato inválidas']);
+    exit;
+}
+
+// Verificar se o contrato existe
+$stmt = $pdo->prepare("SELECT id FROM clientes WHERE id = ?");
 $stmt->execute([$contratoId]);
-$contrato = $stmt->fetch();
-
-if (!$contrato) {
-    die("Contrato não encontrado.");
+if (!$stmt->fetch()) {
+    echo json_encode(['success' => false, 'message' => 'Contrato não encontrado']);
+    exit;
 }
 
-$pastaContrato = "../contratos/" . preg_replace('/[^a-zA-Z0-9-_]/', '', $contrato['nome']) . "/files/";
+// Sanitizar nome do contrato para uso em pasta
+$pastaNome = preg_replace('/[^a-zA-Z0-9-_]/', '', $contratoNome);
 
-if (!file_exists($pastaContrato)) {
-    die("Pasta do contrato não encontrada.");
-}
+// Configurar diretório para upload
+$dirPath = "../contratos/" . $pastaNome . "/files";
 
-if (isset($_FILES['arquivo'])) {
-    $arquivo = $_FILES['arquivo'];
-    
-    // Validar arquivo
-    $extensao = strtolower(pathinfo($arquivo['name'], PATHINFO_EXTENSION));
-    $nomeArquivo = uniqid() . '.' . $extensao;
-    $caminhoCompleto = $pastaContrato . $nomeArquivo;
-    
-    if (move_uploaded_file($arquivo['tmp_name'], $caminhoCompleto)) {
-        echo "success";
-    } else {
-        echo "error";
+// Criar diretório se não existir
+if (!file_exists($dirPath)) {
+    if (!mkdir($dirPath, 0755, true)) {
+        echo json_encode(['success' => false, 'message' => 'Erro ao criar diretório para arquivos']);
+        exit;
     }
-} else {
-    echo "Nenhum arquivo enviado.";
 }
+
+// Nome do arquivo
+$fileName = $_FILES['arquivo']['name'];
+// Sanitizar nome do arquivo
+$fileName = preg_replace('/[^a-zA-Z0-9-_.]/', '', $fileName);
+$targetFile = $dirPath . '/' . $fileName;
+
+// Verificar se arquivo já existe
+if (file_exists($targetFile)) {
+    $fileInfo = pathinfo($fileName);
+    $fileName = $fileInfo['filename'] . '_' . date('YmdHis') . '.' . $fileInfo['extension'];
+    $fileName = preg_replace('/[^a-zA-Z0-9-_.]/', '', $fileName);
+    $targetFile = $dirPath . '/' . $fileName;
+}
+
+// Fazer upload
+if (move_uploaded_file($_FILES['arquivo']['tmp_name'], $targetFile)) {
+    echo json_encode(['success' => true, 'message' => 'Arquivo enviado com sucesso!']);
+} else {
+    echo json_encode(['success' => false, 'message' => 'Erro ao enviar arquivo']);
+}
+?>
