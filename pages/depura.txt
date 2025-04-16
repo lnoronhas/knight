@@ -1,0 +1,77 @@
+function formatarResultadosChecagem(resultado) {
+        // Verificação mais robusta dos dados
+        if (!resultado || !resultado.detalhes) {
+            return '<div class="alert alert-warning">Dados da checagem não disponíveis ou em formato inválido</div>';
+        }
+
+        const { status_aparelhos = [], detalhes_aparelhos = [] } = resultado.detalhes;
+
+        // Verificação adicional se status_aparelhos existe
+        if (!Array.isArray(status_aparelhos)) {
+            console.error("Estrutura de dados inesperada:", resultado);
+            return '<div class="alert alert-warning">Formato de dados inesperado</div>';
+        }
+
+        let html = `
+    <div class="mb-3">
+        <h5>Resumo: ${resultado.resumo || 'Nenhum resumo disponível'}</h5>
+        <div class="table-responsive">
+            <table class="table table-sm table-dark">
+                <thead>
+                    <tr>
+                        <th>Aparelho</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+        status_aparelhos.forEach(aparelho => {
+            if (!aparelho) return;
+
+            const badgeClass = aparelho.situacao === 'ENVIANDO' ? 'success' : 'secondary';
+            html += `
+        <tr>
+            <td>${aparelho.aet || 'N/A'}</td>
+            <td><span class="badge bg-${badgeClass}">${aparelho.situacao || 'DESCONHECIDO'}</span></td>
+        </tr>
+        `;
+        });
+
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } else {
+        html += '<div class="alert alert-info">Nenhum detalhe adicional disponível</div>';
+    }
+
+    return html;
+    }
+
+    function mostrarDetalhesChecagem(checagemId) {
+        fetch(`checagem_obter_detalhes.php?id=${checagemId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao obter detalhes');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const modalBody = document.getElementById('detalhesChecagemBody');
+                modalBody.innerHTML = formatarResultadosChecagem(data);
+                new bootstrap.Modal(document.getElementById('detalhesChecagemModal')).show();
+            })
+            .catch(error => {
+                console.error('Erro ao obter detalhes:', error);
+                const modalBody = document.getElementById('detalhesChecagemBody');
+                modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    Falha ao carregar detalhes: ${error.message}
+                </div>
+            `;
+                new bootstrap.Modal(document.getElementById('detalhesChecagemModal')).show();
+            });
+    }

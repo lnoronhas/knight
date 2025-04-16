@@ -717,11 +717,17 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
 
     function formatarResultadosChecagem(resultado) {
         // Verificação mais robusta dos dados
-        if (!resultado || !resultado.detalhes || !resultado.detalhes.status_aparelhos) {
+        if (!resultado || !resultado.detalhes) {
             return '<div class="alert alert-warning">Dados da checagem não disponíveis ou em formato inválido</div>';
         }
 
-        const { status_aparelhos = [], detalhes_aparelhos = [] } = resultado.detalhes;
+        const { status = [], aparelhos = [] } = resultado.detalhes;
+
+        // Verificação adicional se status existe
+        if (!Array.isArray(status)) {
+            console.error("Estrutura de dados inesperada:", resultado);
+            return '<div class="alert alert-warning">Formato de dados inesperado</div>';
+        }
 
         let html = `
         <div class="mb-3">
@@ -737,20 +743,18 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                     <tbody>
     `;
 
-        // Verificar se status_aparelhos é um array antes de usar forEach
-        if (Array.isArray(status_aparelhos)) {
-            status_aparelhos.forEach(aparelho => {
-                if (!aparelho) return;
+        status.forEach(aparelho => {
+            if (!aparelho) return;
 
-                const badgeClass = aparelho.situacao === 'ENVIANDO' ? 'success' : 'secondary';
-                html += `
-                <tr>
-                    <td>${aparelho.aet || 'N/A'}</td>
-                    <td><span class="badge bg-${badgeClass}">${aparelho.situacao || 'DESCONHECIDO'}</span></td>
-                </tr>
-            `;
-            });
-        }
+            const badgeClass = aparelho.situacao === 'ENVIANDO' ? 'success' :
+                (aparelho.situacao === 'SEM ENVIOS' ? 'secondary' : 'warning');
+            html += `
+            <tr>
+                <td>${aparelho.aet || 'N/A'}</td>
+                <td><span class="badge bg-${badgeClass}">${aparelho.situacao || 'DESCONHECIDO'}</span></td>
+            </tr>
+        `;
+        });
 
         html += `
                     </tbody>
@@ -759,8 +763,8 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
         </div>
     `;
 
-        // Adicionar detalhes dos aparelhos se existirem
-        if (Array.isArray(detalhes_aparelhos) && detalhes_aparelhos.length > 0) {
+        // Se houver informações adicionais nos aparelhos
+        if (Array.isArray(aparelhos) && aparelhos.length > 0) {
             html += `
             <div class="mt-4">
                 <h5>Detalhes dos Aparelhos</h5>
@@ -768,28 +772,22 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                     <table class="table table-sm table-dark">
                         <thead>
                             <tr>
-                                <th>AE Title</th>
-                                <th>Descrição</th>
-                                <th>Estação</th>
-                                <th>Modalidade</th>
+                                <th>Aparelho</th>
                                 <th>IP</th>
-                                <th>Status</th>
+                                <th>Porta</th>
+                                <th>Última Checagem</th>
                             </tr>
                         </thead>
                         <tbody>
         `;
 
-            detalhes_aparelhos.forEach(aparelho => {
-                if (!aparelho) return;
-
+            aparelhos.forEach(aparelho => {
                 html += `
                 <tr>
-                    <td>${aparelho.aet || 'N/A'}</td>
-                    <td>${aparelho.ae_desc || '-'}</td>
-                    <td>${aparelho.station_name || '-'}</td>
-                    <td>${aparelho.modality || '-'}</td>
-                    <td>${aparelho.ip || '-'}</td>
-                    <td>${aparelho.SITUACAO || '-'}</td>
+                    <td>${aparelho.nome || 'N/A'}</td>
+                    <td>${aparelho.ip || 'N/A'}</td>
+                    <td>${aparelho.porta || 'N/A'}</td>
+                    <td>${aparelho.ultima_checagem || 'N/A'}</td>
                 </tr>
             `;
             });
@@ -800,8 +798,6 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                 </div>
             </div>
         `;
-        } else {
-            html += '<div class="alert alert-info">Nenhum detalhe adicional disponível</div>';
         }
 
         return html;
@@ -824,10 +820,10 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                 console.error('Erro ao obter detalhes:', error);
                 const modalBody = document.getElementById('detalhesChecagemBody');
                 modalBody.innerHTML = `
-                <div class="alert alert-danger">
-                    Falha ao carregar detalhes: ${error.message}
-                </div>
-            `;
+            <div class="alert alert-danger">
+                Falha ao carregar detalhes: ${error.message}
+            </div>
+        `;
                 new bootstrap.Modal(document.getElementById('detalhesChecagemModal')).show();
             });
     }

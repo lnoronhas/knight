@@ -65,9 +65,23 @@ try {
 
     // 3. Registrar a checagem no banco de dados
     $stmt = $pdo->prepare("INSERT INTO checagens 
-                              (cliente_id, data, resultado_json) 
-                              VALUES (?, NOW(), ?)");
-    $stmt->execute([$clienteId, json_encode($resultado)]);
+                      (cliente_id, data, resultado_json, tipo_checagem, status, resumo) 
+                      VALUES (?, NOW(), ?, ?, ?, ?)");
+    $stmt->execute([
+        $clienteId, 
+        json_encode(['status_aparelhos' => $resultado['detalhes']['status_aparelhos']]),
+        'cadastrados',
+        $resultado['status'],
+        $resultado['resumo']
+    ]);
+
+    $stmt->execute([
+        $clienteId, 
+        json_encode(['detalhes_aparelhos' => $resultado['detalhes']['detalhes_aparelhos']]),
+        'completa',
+        $resultado['status'],
+        $resultado['resumo']
+    ]);
 
     // 4. Retornar resposta de sucesso
     echo json_encode([
