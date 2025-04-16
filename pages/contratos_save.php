@@ -27,6 +27,14 @@ try {
     $stmt = $pdo->prepare("INSERT INTO clientes (nome, bilhetagem, qtd_bilhetagem, ativo, criado_em, atualizado_em) VALUES (?, ?, ?, ?, NOW(), NOW())");
     $stmt->execute([$nome, $bilhetagem, $qtd_bilhetagem, $ativo]);
     $id = $pdo->lastInsertId();
+    
+    // Criar pastas para o novo contrato
+    $pastaContrato = "../contratos/" . preg_replace('/[^a-zA-Z0-9-_]/', '', $nome);
+    if (!file_exists($pastaContrato)) {
+        mkdir($pastaContrato, 0777, true);
+        mkdir($pastaContrato . "/checagens", 0777);
+        mkdir($pastaContrato . "/files", 0777);
+    }
   }
   
   // Processar novas modalidades (inserir na tabela modalidades)

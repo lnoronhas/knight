@@ -35,7 +35,7 @@ $contratos = $pdo->query($query)->fetchAll();
       <table class="table table-dark table-striped table-hover table-knight">
         <thead>
           <tr>
-            
+
             <th scope="col">Nome</th>
             <th scope="col" class="text-nowrap">Bilhetagem</th>
             <th scope="col" class="text-nowrap">Qtd Bilhetagem</th>
@@ -89,7 +89,7 @@ $contratos = $pdo->query($query)->fetchAll();
                 <?php if ($tipoLogado === 'master'): ?>
                   <button type="button" class="btn btn-sm btn-outline-danger handle-contrato-action"
                     data-id="<?= $c['id'] ?>" data-nome="<?= $c['nome'] ?>" data-ativo="<?= $c['ativo'] ?>"
-                    title="Gerenciar Contrato">
+                    title="Desativar/Remover Contrato">
                     <i class="fas fa-trash"></i>
                   </button>
                   <?php if (in_array($tipoLogado, ['master', 'infra'])): ?>
@@ -112,6 +112,10 @@ $contratos = $pdo->query($query)->fetchAll();
                     <i class="fas fa-power-off"></i>
                   </button>
                 <?php endif; ?>
+                <a href="#" class="btn btn-sm btn-info btn-arquivos" data-id="<?= $contrato['id'] ?>"
+                  data-nome="<?= htmlspecialchars($contrato['nome']) ?>">
+                  <i class="fas fa-file"></i> Arquivos
+                </a>
               </td>
 
               <td data-label="Modalidades">
@@ -207,7 +211,7 @@ $contratos = $pdo->query($query)->fetchAll();
   <div class="modal-dialog">
     <div class="modal-content bg-dark text-light">
       <div class="modal-header">
-        <h5 class="modal-title">Gerenciar Contrato</h5>
+        <h5 class="modal-title">Desativar/Remover Contrato</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
@@ -245,6 +249,55 @@ $contratos = $pdo->query($query)->fetchAll();
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="button" class="btn btn-danger" id="btn-confirmar-desativar">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Arquivos -->
+<div class="modal fade" id="arquivosModal" tabindex="-1" aria-labelledby="arquivosModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="arquivosModalLabel">Arquivos do Contrato: <span id="nomeContratoArquivos"></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Formulário de upload -->
+        <form id="uploadForm" enctype="multipart/form-data">
+          <input type="hidden" name="contrato_id" id="contrato_id_upload">
+          <div class="mb-3">
+            <label for="arquivo" class="form-label">Selecione arquivo para upload:</label>
+            <input class="form-control" type="file" id="arquivo" name="arquivo" required>
+          </div>
+          <button type="submit" class="btn btn-knight">Enviar Arquivo</button>
+        </form>
+
+        <hr>
+
+        <!-- Lista de arquivos -->
+        <div id="listaArquivos">
+          <p class="text-muted">Carregando arquivos...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PDF Viewer Modal -->
+<div class="modal fade" id="pdfViewerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Visualizar PDF</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <iframe id="pdfViewer" style="width: 100%; height: 80vh; border: none;"></iframe>
       </div>
     </div>
   </div>

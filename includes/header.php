@@ -26,6 +26,8 @@ include '../includes/defs.php';
   <link rel="stylesheet" href="../assets/css/style.css">
   
   <link rel="icon" href="/assets/img/favicon.ico" type="image/x-icon">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
 </head>
 <body>
   <header>
