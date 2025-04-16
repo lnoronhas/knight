@@ -259,7 +259,8 @@ $contratos = $pdo->query($query)->fetchAll();
   <div class="modal-dialog modal-lg">
     <div class="modal-content bg-dark text-light">
       <div class="modal-header">
-        <h5 class="modal-title" id="arquivosModalLabel">Arquivos do Contrato: <span id="nomeContratoArquivos"></span></h5>
+        <h5 class="modal-title" id="arquivosModalLabel">Arquivos do Contrato: <span id="nomeContratoArquivos"></span>
+        </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
@@ -304,90 +305,118 @@ $contratos = $pdo->query($query)->fetchAll();
 </div>
 
 <script>
-// Variáveis globais para o modal
-let arquivosModal;
-let pdfViewerModal;
+  // Variáveis globais para o modal
+  let arquivosModal;
+  let pdfViewerModal;
 
-// Inicializar os modais quando o documento estiver carregado
-document.addEventListener('DOMContentLoaded', function() {
+  // Inicializar os modais quando o documento estiver carregado
+  document.addEventListener('DOMContentLoaded', function () {
     // Inicializar os objetos de modal do Bootstrap
     arquivosModal = new bootstrap.Modal(document.getElementById('arquivosModal'));
     pdfViewerModal = new bootstrap.Modal(document.getElementById('pdfViewerModal'));
-    
+
     // Configurar o envio do formulário
-    document.getElementById('uploadForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        
-        // Mostrar indicador de carregamento
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...';
-        submitBtn.disabled = true;
-        
-        // Enviar via fetch (alternativa ao $.ajax)
-        fetch('contratos_upload.php', {
-            method: 'POST',
-            body: formData
-        })
+    document.getElementById('uploadForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      const submitBtn = this.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+
+      // Mostrar indicador de carregamento
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...';
+      submitBtn.disabled = true;
+
+      // Enviar via fetch (alternativa ao $.ajax)
+      fetch('contratos_upload.php', {
+        method: 'POST',
+        body: formData
+      })
         .then(response => response.text())
         .then(data => {
-            alert('Arquivo enviado com sucesso!');
-            document.getElementById('arquivo').value = '';
-            
-            // Recarregar a lista de arquivos
-            const contratoId = document.getElementById('contrato_id_upload').value;
-            const contratoNome = document.getElementById('contrato_nome_upload').value;
-            carregarArquivos(contratoId, contratoNome);
+          alert('Arquivo enviado com sucesso!');
+          document.getElementById('arquivo').value = '';
+
+          // Recarregar a lista de arquivos
+          const contratoId = document.getElementById('contrato_id_upload').value;
+          const contratoNome = document.getElementById('contrato_nome_upload').value;
+          carregarArquivos(contratoId, contratoNome);
         })
         .catch(error => {
-            alert('Erro ao enviar arquivo: ' + error.message);
+          alert('Erro ao enviar arquivo: ' + error.message);
         })
         .finally(() => {
-            // Restaurar o botão
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
+          // Restaurar o botão
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
         });
     });
-});
+  });
 
-// Função para abrir o modal de arquivos
-function abrirModalArquivos(id, nome) {
+  // Função para abrir o modal de arquivos
+  function abrirModalArquivos(id, nome) {
     // Configurar os campos do modal
     document.getElementById('nomeContratoArquivos').textContent = nome;
     document.getElementById('contrato_id_upload').value = id;
     document.getElementById('contrato_nome_upload').value = nome;
-    
+
     // Carregar lista de arquivos
     carregarArquivos(id, nome);
-    
+
     // Abrir o modal
     arquivosModal.show();
-}
+  }
 
-// Função para carregar arquivos
-function carregarArquivos(contratoId, contratoNome) {
+  // Função para carregar arquivos
+  function carregarArquivos(contratoId, contratoNome) {
     const listaArquivos = document.getElementById('listaArquivos');
     listaArquivos.innerHTML = '<p class="text-center"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Carregando arquivos...</p>';
-    
+
     // Fazer requisição para listar arquivos
     fetch(`contratos_listar_arquivos.php?id=${contratoId}&nome=${encodeURIComponent(contratoNome)}`)
-        .then(response => response.text())
-        .then(html => {
-            listaArquivos.innerHTML = html;
-        })
-        .catch(error => {
-            listaArquivos.innerHTML = '<div class="alert alert-danger">Erro ao carregar arquivos: ' + error.message + '</div>';
-        });
-}
+      .then(response => response.text())
+      .then(html => {
+        listaArquivos.innerHTML = html;
+      })
+      .catch(error => {
+        listaArquivos.innerHTML = '<div class="alert alert-danger">Erro ao carregar arquivos: ' + error.message + '</div>';
+      });
+  }
 
-// Função para visualizar PDF
-function visualizarPDF(nomeArquivo, contratoNome) {
-    // Usando o script de download para visualizar PDF
-    const viewerSrc = `contratos_download.php?nome=${encodeURIComponent(contratoNome)}&arquivo=${encodeURIComponent(nomeArquivo)}`;
+  // Função para visualizar PDF
+  function visualizarPDF(nomeArquivo, contratoNome) {
+    // Usando o script de download para visualizar PDF, adicionando parâmetro visualizar=1
+    const viewerSrc = `contratos_download.php?nome=${encodeURIComponent(contratoNome)}&arquivo=${encodeURIComponent(nomeArquivo)}&visualizar=1`;
     document.getElementById('pdfViewer').src = viewerSrc;
     pdfViewerModal.show();
-}
+  }
+
+  // Adicione esta função ao bloco de script existente em contratos.php
+  function excluirArquivo(nomeArquivo, contratoNome, contratoId) {
+    if (confirm('Tem certeza que deseja excluir o arquivo ' + nomeArquivo + '?')) {
+      fetch('contratos_delete_arquivo.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'arquivo=' + encodeURIComponent(nomeArquivo) +
+          '&contrato_nome=' + encodeURIComponent(contratoNome) +
+          '&contrato_id=' + contratoId
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('Arquivo excluído com sucesso!');
+            // Recarregar a lista de arquivos
+            carregarArquivos(contratoId, contratoNome);
+          } else {
+            alert('Erro ao excluir arquivo: ' + data.message);
+          }
+        })
+        .catch(error => {
+          alert('Erro na requisição: ' + error.message);
+        });
+    }
+  }
 </script>
 <?php include '../includes/footer.php'; ?>

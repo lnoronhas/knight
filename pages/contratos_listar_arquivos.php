@@ -82,28 +82,3 @@ function formatBytes($bytes, $precision = 2) {
     return round($bytes, $precision) . ' ' . $units[$pow];
 }
 ?>
-
-<script>
-// Função para excluir arquivo
-function excluirArquivo(nomeArquivo, contratoNome, contratoId) {
-    if (confirm('Tem certeza que deseja excluir o arquivo ' + nomeArquivo + '?')) {
-        fetch('contratos_delete_arquivo.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'arquivo=' + encodeURIComponent(nomeArquivo) + 
-                  '&contrato_nome=' + encodeURIComponent(contratoNome) + 
-                  '&contrato_id=' + contratoId
-        })
-        .then(response => response.text())
-        .then(data => {
-            alert('Arquivo excluído com sucesso!');
-            carregarArquivos(contratoId, contratoNome);
-        })
-        .catch(error => {
-            alert('Erro ao excluir arquivo: ' + error.message);
-        });
-    }
-}
-</script>
