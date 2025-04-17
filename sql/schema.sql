@@ -70,12 +70,15 @@ CREATE TABLE `checagens` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `cliente_id` int(11) DEFAULT NULL,
   `data` datetime DEFAULT NULL,
-  `resultado_json` text DEFAULT NULL,
+  `resumo` varchar(255) DEFAULT NULL,
+  `status` enum('sucesso','erro','aviso') DEFAULT NULL,
+  `resultado_json` longtext DEFAULT NULL,
   `caminho_arquivo` text DEFAULT NULL,
+  `tipo_checagem` enum('cadastrados','completa') DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `cliente_id` (`cliente_id`),
   CONSTRAINT `checagens_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- knight.clientes_modalidades definition
@@ -90,7 +93,7 @@ CREATE TABLE `clientes_modalidades` (
   KEY `modalidade_id` (`modalidade_id`),
   CONSTRAINT `clientes_modalidades_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`),
   CONSTRAINT `clientes_modalidades_ibfk_2` FOREIGN KEY (`modalidade_id`) REFERENCES `modalidades` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- knight.conexoes definition
@@ -103,7 +106,8 @@ CREATE TABLE `conexoes` (
   `senha` varchar(255) DEFAULT NULL,
   `tipo_banco` enum('mysql','postgres') DEFAULT NULL,
   `versao_infra` enum('legado','atual') DEFAULT NULL,
+  `dbname` varchar(100) NOT NULL DEFAULT 'pacsdb',
   PRIMARY KEY (`id`),
   KEY `cliente_id` (`cliente_id`),
   CONSTRAINT `conexoes_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
