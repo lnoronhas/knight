@@ -5,14 +5,15 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/checagem_errors.log');
+
 // Verificar se a saída está limpa
 if (headers_sent()) {
     error_log("Headers já enviados antes do script");
     exit;
 }
+
 // Definir cabeçalho JSON primeiro
 header('Content-Type: application/json');
-
 
 // Incluir arquivos necessários
 require_once __DIR__ . '/../includes/db.php';
@@ -42,8 +43,8 @@ if (!$clienteId || $clienteId < 1) {
 try {
     // 1. Buscar informações do cliente
     $stmt = $pdo->prepare("SELECT c.*, cx.* FROM clientes c 
-                              LEFT JOIN conexoes cx ON cx.cliente_id = c.id 
-                              WHERE c.id = ? LIMIT 1");
+                          LEFT JOIN conexoes cx ON cx.cliente_id = c.id 
+                          WHERE c.id = ? LIMIT 1");
     $stmt->execute([$clienteId]);
     $cliente = $stmt->fetch();
 
@@ -52,9 +53,12 @@ try {
     }
 
     $tipoChecagem = filter_input(INPUT_POST, 'tipo_checagem', FILTER_SANITIZE_STRING) ?: 'status';
-    if (!in_array($tipoChecagem, ['status', 'detalhes'])) {
+    if (!in_array($tipoChecagem, ['status', 'detalhes', 'ambos'])) {
         http_response_code(400);
-        die(json_encode(['success' => false, 'message' => 'Tipo de checagem inválido']));
+        die(json_encode([
+            'success' => false,
+            'message' => 'Tipo de checagem inválido'
+        ]));
     }
 
     // 2. Executar checagem conforme o tipo de conexão
@@ -133,101 +137,87 @@ function checarMySQLAtual($cliente, $tipoChecagem = 'status')
         $pdo = conectarBancoCliente($cliente);
         $resultado = [];
 
-        if ($tipoChecagem === 'status' || $tipoChecagem === 'ambos') {
-            // Query para status dos aparelhos
-            $queryStatus = "SELECT
-                a.aet,
-                CASE
-                    WHEN COUNT(asi.study_uid) > 1 THEN 'ENVIANDO'
-                    ELSE 'SEM ENVIOS'
-                END AS situacao
-                FROM pacsdb.ae a
-                LEFT JOIN pacsdb.animati_store_info asi
-                    ON asi.ae_title = a.aet
-                    AND asi.datetime > DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-                GROUP BY a.aet";
-
-            $status = $pdo->query($queryStatus)->fetchAll(PDO::FETCH_ASSOC);
-            $comEnvios = count(array_filter($status, fn($item) => $item['situacao'] === 'ENVIANDO'));
-            $semEnvios = count($status) - $comEnvios;
-
-            $resultado['status_aparelhos'] = $status;
-            $resumoStatus = "$comEnvios aparelhos enviando, $semEnvios sem envios";
-        }
-
-        if ($tipoChecagem === 'detalhes' || $tipoChecagem === 'ambos') {
-            // Query para detalhes completos
-            $queryAparelhos = "SELECT
-                a.aet,
-                a.ae_desc,
-                ser.station_name,
-                ser.modality,
-                envios.ip,
-                envios.status,
-                CASE WHEN envios.ae_title IS NULL THEN 'SEM ENVIOS'
-                ELSE 'COM ENVIOS' END SITUACAO
-                FROM pacsdb.ae a
-                LEFT JOIN (
-                    SELECT
-                        asi.ae_title,
-                        asi.ip,
-                        CASE
-                            WHEN counts.total_ips > 1 THEN 'Verificar IP'
-                            ELSE ''
-                        END AS status
-                    FROM (
-                        SELECT ae_title, ip
-                        FROM pacsdb.animati_store_info
-                        WHERE datetime > DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-                        GROUP BY ae_title, ip
-                    ) asi
-                    LEFT JOIN (
-                        SELECT ae_title, COUNT(DISTINCT ip) AS total_ips
-                        FROM pacsdb.animati_store_info
-                        WHERE datetime > DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-                        GROUP BY ae_title
-                    ) counts ON counts.ae_title = asi.ae_title
-                ) AS envios ON envios.ae_title = a.aet
-                JOIN pacsdb.series ser on ser.src_aet = envios.ae_title
-                WHERE a.aet not in ('JBOSS','ANIMATI_PACS')
-                GROUP BY
+        // Simplificar a lógica de checagem baseada no tipo
+        switch ($tipoChecagem) {
+            case 'status':
+                $queryStatus = "SELECT
                     a.aet,
-                    a.ae_desc,
-                    ser.station_name,
-                    ser.modality,
-                    envios.ip,
-                    envios.status,
-                    envios.ae_title
-                ORDER BY SITUACAO, a.aet";
+                    CASE
+                        WHEN COUNT(asi.study_uid) > 1 THEN 'ENVIANDO'
+                        ELSE 'SEM ENVIOS'
+                    END AS situacao
+                    FROM pacsdb.ae a
+                    LEFT JOIN pacsdb.animati_store_info asi
+                        ON asi.ae_title = a.aet
+                        AND asi.datetime > DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+                    GROUP BY a.aet";
 
-            $aparelhos = $pdo->query($queryAparelhos)->fetchAll(PDO::FETCH_ASSOC);
-            $comEnviosDetalhes = count(array_filter($aparelhos, fn($item) => $item['SITUACAO'] === 'COM ENVIOS'));
+                $status = $pdo->query($queryStatus)->fetchAll(PDO::FETCH_ASSOC);
+                $comEnvios = count(array_filter($status, fn($item) => $item['situacao'] === 'ENVIANDO'));
+                $semEnvios = count($status) - $comEnvios;
 
-            $resultado['detalhes_aparelhos'] = $aparelhos;
-            $resumoDetalhes = "$comEnviosDetalhes aparelhos com envios detalhados";
+                $resultado['status_aparelhos'] = $status;
+                $resumo = "$comEnvios aparelhos enviando, $semEnvios sem envios";
+                break;
+
+            case 'detalhes':
+                $queryAparelhos = "SELECT
+        a.aet,
+        a.ae_desc,
+        ser.station_name,
+        ser.modality,
+        envios.ip,
+        envios.status,
+        CASE WHEN envios.ae_title IS NULL THEN 'SEM ENVIOS'
+        ELSE 'COM ENVIOS' END SITUACAO
+        FROM pacsdb.ae a
+        LEFT JOIN (
+            SELECT 
+                asi.ae_title,
+                asi.ip,
+                CASE
+                    WHEN COUNT(DISTINCT asi.ip) > 1 THEN 'Verificar IP'
+                    ELSE ''
+                END AS status
+            FROM pacsdb.animati_store_info asi
+            GROUP BY asi.ae_title, asi.ip
+        ) AS envios ON envios.ae_title = a.aet
+        LEFT JOIN pacsdb.series ser on ser.src_aet = a.aet
+        WHERE a.aet not in ('JBOSS','ANIMATI_PACS')
+        GROUP BY a.aet, a.ae_desc, ser.station_name, ser.modality, envios.ip, envios.status";
+
+                $aparelhos = $pdo->query($queryAparelhos)->fetchAll(PDO::FETCH_ASSOC);
+                $comEnviosDetalhes = count(array_filter($aparelhos, fn($item) => $item['SITUACAO'] === 'COM ENVIOS'));
+
+                $resultado['detalhes_aparelhos'] = $aparelhos;
+                $resumo = "$comEnviosDetalhes aparelhos com envios detalhados";
+                break;
+
+            case 'ambos':
+                // Executar ambas as checagens
+                $resultadoStatus = checarMySQLAtual($cliente, 'status');
+                $resultadoDetalhes = checarMySQLAtual($cliente, 'detalhes');
+
+                $resultado = array_merge(
+                    $resultadoStatus['detalhes'],
+                    $resultadoDetalhes['detalhes']
+                );
+                $resumo = "Checagem completa concluída";
+                break;
+
+            default:
+                throw new Exception("Tipo de checagem inválido");
         }
-
-        // Determinar o resumo geral e status
-        $resumo = $tipoChecagem === 'status' ? $resumoStatus :
-            ($tipoChecagem === 'detalhes' ? $resumoDetalhes : "$resumoStatus; $resumoDetalhes");
 
         return [
             'status' => 'sucesso',
+            'message' => 'Checagem concluída com sucesso',
             'resumo' => $resumo,
-            'resumo_status' => $resumoStatus ?? '',
-            'resumo_detalhes' => $resumoDetalhes ?? '',
             'detalhes' => $resultado
         ];
 
     } catch (PDOException $e) {
-        return [
-            'status' => 'erro',
-            'resumo' => 'Falha na consulta: ' . $e->getMessage(),
-            'detalhes' => [
-                'erro' => $e->getMessage(),
-                'codigo' => $e->getCode()
-            ]
-        ];
+        throw new Exception('Erro ao executar checagem: ' . $e->getMessage());
     }
 }
 

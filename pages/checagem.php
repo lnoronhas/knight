@@ -45,16 +45,16 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                 <i class="fas fa-tasks"></i> Ações em Massa <span class="badge bg-danger"
                     id="contadorSelecionados">0</span>
             </button>
-            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="btnAcoesMultiplas">
-                <li><a class="dropdown-item" href="#" id="checarStatusMultiplos">
-                        <i class="fas fa-sync-alt"></i> Checar Status dos Aparelhos</a></li>
-                <li><a class="dropdown-item" href="#" id="checarDetalhesMultiplos">
-                        <i class="fas fa-list-ul"></i> Checar Detalhes Completos</a></li>
+            <ul class="dropdown-menu dropdown-menu-dark">
+                <li><a class="dropdown-item" href="#" id="checarStatusMultiplos" data-tipo-checagem="status">
+                        <i class="fas fa-sync-alt"></i> Aparelhos cadastrados</a></li>
+                <li><a class="dropdown-item" href="#" id="checarDetalhesMultiplos" data-tipo-checagem="detalhes">
+                        <i class="fas fa-list-ul"></i> Todos os aparelhos</a></li>
                 <li>
                     <hr class="dropdown-divider">
                 </li>
-                <li><a class="dropdown-item" href="#" id="limparSelecao">
-                        <i class="fas fa-times"></i> Limpar Seleção</a></li>
+                <li><a class="dropdown-item" href="#" id="checarTodosMultiplos" data-tipo-checagem="ambos">
+                        <i class="fas fa-check-double"></i> Checagem completa</a></li>
             </ul>
         </div>
     </div>
@@ -161,13 +161,20 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                                             aria-expanded="false">
                                             <i class="fas fa-sync-alt"></i> Checagem
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-dark w-100">
-                                            <li><a class="dropdown-item w-100" href="#"
+                                        <ul class="dropdown-menu dropdown-menu-dark"
+                                            aria-labelledby="btnChecarDropdown-<?= $cliente['id'] ?>">
+                                            <li><a class="dropdown-item btn-checar-agora" href="#"
                                                     data-cliente-id="<?= $cliente['id'] ?>"
                                                     data-tipo-checagem="status">Aparelhos cadastrados</a></li>
-                                            <li><a class="dropdown-item w-100" href="#"
+                                            <li><a class="dropdown-item btn-checar-agora" href="#"
                                                     data-cliente-id="<?= $cliente['id'] ?>"
                                                     data-tipo-checagem="detalhes">Todos os aparelhos</a></li>
+                                            <li>
+                                                <hr class="dropdown-divider">
+                                            </li>
+                                            <li><a class="dropdown-item btn-checar-agora" href="#"
+                                                    data-cliente-id="<?= $cliente['id'] ?>"
+                                                    data-tipo-checagem="ambos">Checagem completa</a></li>
                                         </ul>
                                     </div>
                                     <!-- Botão Relatório -->
@@ -253,7 +260,16 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                                                         </tbody>
                                                     </table>
                                                 </div>
-                                                <!-- ADICIONE AQUI O CÓDIGO DO PASSO 5 -->
+                                                <?php
+                                                // Add this near the top of the file, before line 264
+                                                $temAgendamento = false;
+
+                                                // Then initialize it properly when loading client data
+                                                if (isset($cliente['id'])) {
+                                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM agendamentos_checagem WHERE id = ?");
+                                                    $stmt->execute([$cliente['id']]);
+                                                    $temAgendamento = (bool) $stmt->fetchColumn();
+                                                } ?>
                                                 <?php if ($temAgendamento): ?>
                                                     <div class="card bg-dark border-info mt-3">
                                                         <div class="card-header border-info">
@@ -315,6 +331,36 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Configuração de Checagem -->
+<div class="modal fade" id="configChecagemModal">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title">Configurar Checagem</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formConfigChecagem">
+                    <div class="mb-3">
+                        <label>Tipo de Checagem</label>
+                        <select class="form-select" id="tipoChecagem">
+                            <option value="status">Aparelhos cadastrados</option>
+                            <option value="detalhes">Todos os aparelhos</option>
+                            <option value="nova_checagem">Checagem completa</option>
+                        </select>
+                    </div>
+                    <!-- Campos dinâmicos baseados na seleção -->
+                    <div id="camposAdicionais"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="executarChecagemConfig">Executar</button>
+            </div>
         </div>
     </div>
 </div>
@@ -504,6 +550,7 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
     let confirmarChecagemModal;
     let pdfViewerModal;
     document.addEventListener('DOMContentLoaded', function () {
+
         // Inicializar modais
         agendamentoModal = new bootstrap.Modal(document.getElementById('agendamentoModal'));
         confirmarChecagemModal = new bootstrap.Modal(document.getElementById('confirmarChecagemModal'));
@@ -517,15 +564,26 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
             });
         });
 
-        // Botões "Checar Agora"
-        document.querySelectorAll('.btn-checar-agora').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const clienteId = this.getAttribute('data-cliente-id');
-                const clienteNome = this.closest('tr').querySelector('td[data-label="Cliente"]').textContent;
-                if (confirm(`Deseja executar a checagem agora para ${clienteNome}?`)) {
-                    executarChecagem(clienteId);
+        document.addEventListener('click', function (e) {
+            // Botões de checagem individual
+            if (e.target.closest('.btn-checar-agora')) {
+                e.preventDefault();
+                const btn = e.target.closest('.btn-checar-agora');
+                const clienteId = btn.getAttribute('data-cliente-id');
+                const tipoChecagem = btn.getAttribute('data-tipo-checagem');
+                const clienteNome = btn.closest('tr')?.querySelector('td[data-label="Cliente"]')?.textContent || 'Cliente';
+
+                if (confirm(`Deseja executar a checagem para ${clienteNome}?`)) {
+                    executarChecagem(clienteId, tipoChecagem);
                 }
-            });
+            }
+
+            // Botões de ação em massa
+            if (e.target.matches('#checarStatusMultiplos, #checarDetalhesMultiplos, #checarTodosMultiplos')) {
+                e.preventDefault();
+                const tipoChecagem = e.target.getAttribute('data-tipo-checagem');
+                executarChecagemMultipla(tipoChecagem);
+            }
         });
 
         // Confirmar checagem
@@ -534,6 +592,26 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
             executarChecagem(clienteId);
             confirmarChecagemModal.hide();
         });
+
+        // Verificar se existe agendamento
+        async function verificarAgendamento(clienteId) {
+            try {
+                const response = await fetch(`checagem_carregar_agendamento.php?id=${clienteId}`);
+                const data = await response.json();
+                return data.success && data.data;
+            } catch (error) {
+                console.error('Erro ao verificar agendamento:', error);
+                return false;
+            }
+        }
+
+        // Atualizar variável temAgendamento
+        const clienteId = document.querySelector('[data-cliente-id]')?.dataset.clienteId;
+        if (clienteId) {
+            verificarAgendamento(clienteId).then(temAgendamento => {
+                window.temAgendamento = temAgendamento;
+            });
+        }
 
         // Cancelar agendamento
         document.getElementById('cancelarAgendamento')?.addEventListener('click', function () {
@@ -669,6 +747,43 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
             todosClientes.checked = false;
             seletorContainer.style.display = 'block';
         });
+
+        // Adicionar evento para checkbox "selecionar todos"
+        const checkTodos = document.getElementById('checkTodos');
+        checkTodos?.addEventListener('change', function () {
+            document.querySelectorAll('.check-cliente').forEach(check => {
+                check.checked = this.checked;
+            });
+            atualizarBotaoAcoes();
+        });
+
+        // Adicionar evento para checkboxes individuais usando delegação de eventos
+        document.querySelector('table')?.addEventListener('change', function (e) {
+            if (e.target.classList.contains('check-cliente')) {
+                // Atualizar estado do "selecionar todos"
+                const checkTodos = document.getElementById('checkTodos');
+                const totalChecks = document.querySelectorAll('.check-cliente').length;
+                const totalChecados = document.querySelectorAll('.check-cliente:checked').length;
+                checkTodos.checked = totalChecks === totalChecados;
+
+                atualizarBotaoAcoes();
+            }
+        });
+
+        // Função para atualizar o contador e visibilidade do botão de ações
+        function atualizarBotaoAcoes() {
+            const selecionados = document.querySelectorAll('.check-cliente:checked');
+            const contador = document.getElementById('contadorSelecionados');
+            const dropdownAcoes = document.getElementById('dropdownAcoes');
+
+            if (contador && dropdownAcoes) {
+                contador.textContent = selecionados.length;
+                dropdownAcoes.style.display = selecionados.length > 0 ? 'inline-block' : 'none';
+            }
+        }
+
+    });
+
     });
 
     // Corrigir foco e cores no campo Select2
@@ -687,55 +802,6 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
     function gerarRelatorioCliente(clienteId, clienteNome) {
         const url = `checagem_gerar_relatorio.php?cliente_id=${clienteId}&todos=1`;
         window.open(url, '_blank');
-    }
-
-    // Função global para executar a checagem
-    async function executarChecagem(clienteId) {
-        const btn = document.querySelector(`.btn-checar-agora[data-cliente-id="${clienteId}"]`);
-        const originalHTML = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processando...';
-        btn.disabled = true;
-        try {
-            const response = await fetch('checagem_executar.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `cliente_id=${clienteId}`
-            });
-            // Verificar se a resposta está vazia
-            const responseText = await response.text();
-            if (!responseText.trim()) {
-                throw new Error('Resposta vazia do servidor');
-            }
-            // Tentar parsear o JSON
-            const data = JSON.parse(responseText);
-            if (!data.success) {
-                throw new Error(data.message || 'Erro desconhecido');
-            }
-            // Atualizar interface
-            const statusCell = btn.closest('tr').querySelector('td[data-label="Status"]');
-            if (statusCell) {
-                const statusClass = data.resultado.status === 'sucesso' ? 'success' :
-                    data.resultado.status === 'erro' ? 'danger' : 'warning';
-                statusCell.innerHTML = `
-                <span class="badge bg-${statusClass}">${data.resultado.status}</span>
-                <small>${data.resultado.resumo}</small>
-            `;
-            }
-            mostrarToast(data.message, 'success');
-        } catch (error) {
-            console.error('Erro na checagem:', error);
-            mostrarToast(`Falha na checagem: ${error.message}`, 'danger');
-            // Log detalhado para depuração
-            if (error.response) {
-                const errorResponse = await error.response.text();
-                console.error('Resposta completa:', errorResponse);
-            }
-        } finally {
-            btn.innerHTML = originalHTML;
-            btn.disabled = false;
-        }
     }
 
     function formatarResultadosChecagem(resultado) {
@@ -807,6 +873,20 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
     }
 
     function mostrarDetalhesChecagem(checagemId) {
+        const modal = new bootstrap.Modal(document.getElementById('detalhesChecagemModal'));
+        const modalBody = document.getElementById('detalhesChecagemBody');
+
+        // Mostrar loading
+        modalBody.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>`;
+
+        modal.show();
+
+        // Buscar os detalhes
         fetch(`checagem_obter_detalhes.php?id=${checagemId}`)
             .then(response => {
                 if (!response.ok) {
@@ -815,19 +895,14 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                 return response.json();
             })
             .then(data => {
-                const modalBody = document.getElementById('detalhesChecagemBody');
                 modalBody.innerHTML = formatarResultadosChecagem(data);
-                new bootstrap.Modal(document.getElementById('detalhesChecagemModal')).show();
             })
             .catch(error => {
                 console.error('Erro ao obter detalhes:', error);
-                const modalBody = document.getElementById('detalhesChecagemBody');
                 modalBody.innerHTML = `
-            <div class="alert alert-danger">
-                Falha ao carregar detalhes: ${error.message}
-            </div>
-        `;
-                new bootstrap.Modal(document.getElementById('detalhesChecagemModal')).show();
+                <div class="alert alert-danger">
+                    Falha ao carregar detalhes: ${error.message}
+                </div>`;
             });
     }
 
@@ -864,18 +939,7 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
         atualizarBotaoAcoes();
     });
 
-    // Substituir o código atual do evento do botão "Checar Agora"
-    document.querySelectorAll('.btn-checar-agora').forEach(btn => {
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            const clienteId = this.getAttribute('data-cliente-id');
-            const tipoChecagem = this.getAttribute('data-tipo-checagem');
-            const clienteNome = this.closest('tr')?.querySelector('td[data-label="Cliente"]')?.textContent || 'Cliente';
-            if (confirm(`Deseja executar a checagem de ${tipoChecagem === 'status' ? 'status dos aparelhos' : 'detalhes completos'} para ${clienteNome}?`)) {
-                executarChecagem(clienteId, tipoChecagem);
-            }
-        });
-    });
+
 
     // Checagem em massa
     document.getElementById('checarStatusMultiplos').addEventListener('click', function (e) {
@@ -888,69 +952,56 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
         executarChecagemMultipla('detalhes');
     });
 
-    function executarChecagemMultipla(tipoChecagem) {
-        const selecionados = document.querySelectorAll('.check-cliente:checked');
-        if (selecionados.length === 0) return;
-        const clientesIds = Array.from(selecionados).map(check => check.value);
-        const nomes = Array.from(selecionados).map(check => check.getAttribute('data-nome'));
-        if (confirm(`Deseja executar a checagem de ${tipoChecagem === 'status' ? 'status dos aparelhos' : 'detalhes completos'} para ${selecionados.length} clientes selecionados?`)) {
-            // Mostrar indicador de progresso
-            const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
-            document.getElementById('progressTotal').textContent = clientesIds.length;
-            document.getElementById('progressAtual').textContent = '0';
-            document.getElementById('progressBar').style.width = '0%';
-            document.getElementById('progressCliente').textContent = '';
-            progressModal.show();
-
-            // Executar checagens em sequência
-            let completados = 0;
-
-            function processarProximo(index) {
-                if (index >= clientesIds.length) {
-                    // Finalizado
-                    setTimeout(() => {
-                        progressModal.hide();
-                        alert('Todas as checagens foram concluídas!');
-                    }, 1000);
-                    return;
-                }
-
-                const clienteId = clientesIds[index];
-                const nome = nomes[index];
-
-                // Atualizar progresso
-                document.getElementById('progressCliente').textContent = nome;
-                document.getElementById('progressAtual').textContent = index + 1;
-                document.getElementById('progressBar').style.width = `${((index + 1) / clientesIds.length) * 100}%`;
-
-                // Executar checagem
-                fetch('checagem_executar.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: `cliente_id=${clienteId}&tipo_checagem=${tipoChecagem}`
-                })
-                    .then(res => res.json())
-                    .catch(error => {
-                        console.error(`Erro na checagem do cliente ${nome}:`, error);
-                    })
-                    .finally(() => {
-                        completados++;
-                        // Processar o próximo após um pequeno delay
-                        setTimeout(() => processarProximo(index + 1), 500);
-                    });
-            }
-
-            // Iniciar o processamento
-            processarProximo(0);
-        }
+    async function executarChecagemMultipla(tipoChecagem) {
+    const selecionados = document.querySelectorAll('.check-cliente:checked');
+    if (selecionados.length === 0) {
+        mostrarToast('Selecione pelo menos um cliente', 'warning');
+        return;
     }
+
+    const clientesIds = Array.from(selecionados).map(check => check.value);
+    const nomes = Array.from(selecionados).map(check => check.getAttribute('data-nome'));
+
+    const tiposTexto = {
+        'status': 'status dos aparelhos',
+        'detalhes': 'todos os aparelhos',
+        'ambos': 'checagem completa'
+    };
+
+    if (confirm(`Deseja executar a checagem de ${tiposTexto[tipoChecagem]} para ${selecionados.length} clientes selecionados?`)) {
+        // Mostrar modal de progresso
+        const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+        document.getElementById('progressTotal').textContent = clientesIds.length;
+        document.getElementById('progressAtual').textContent = '0';
+        document.getElementById('progressBar').style.width = '0%';
+        progressModal.show();
+
+        for (let i = 0; i < clientesIds.length; i++) {
+            const clienteId = clientesIds[i];
+            const nome = nomes[i];
+
+            // Atualizar progresso
+            document.getElementById('progressCliente').textContent = nome;
+            document.getElementById('progressAtual').textContent = i + 1;
+            document.getElementById('progressBar').style.width = `${((i + 1) / clientesIds.length) * 100}%`;
+
+            try {
+                await executarChecagem(clienteId, tipoChecagem);
+            } catch (error) {
+                console.error(`Erro na checagem do cliente ${nome}:`, error);
+            }
+        }
+
+        progressModal.hide();
+        mostrarToast('Todas as checagens foram concluídas!', 'success');
+    }
+}
 
     // Atualizar a função de execução para incluir o tipo de checagem
     async function executarChecagem(clienteId, tipoChecagem = 'status') {
-        const btn = document.querySelector(`[data-cliente-id="${clienteId}"][data-tipo-checagem="${tipoChecagem}"]`) ||
-            document.querySelector(`[data-cliente-id="${clienteId}"]`);
+        const btn = document.querySelector(`[data-cliente-id="${clienteId}"][data-tipo-checagem="${tipoChecagem}"]`);
+        if (!btn) return;
+
         const originalHTML = btn.innerHTML;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processando...';
         btn.disabled = true;
@@ -975,31 +1026,31 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
             }
 
             // Atualizar interface
-            const statusCell = btn.closest('tr').querySelector('td[data-label="Status"]');
-            if (statusCell) {
-                const statusClass = data.resultado.status === 'sucesso' ? 'success' :
-                    data.resultado.status === 'erro' ? 'danger' : 'warning';
-                statusCell.innerHTML = `
-                    <span class="badge bg-${statusClass}">${data.resultado.status}</span>
-                `;
+            const row = btn.closest('tr');
+            if (row) {
+                const statusCell = row.querySelector('td[data-label="Status"]');
+                const resultadoCell = row.querySelector('td[data-label="Resultado"]');
+                const dataCell = row.querySelector('td[data-label="Última Checagem"]');
+
+                if (statusCell) {
+                    const statusClass = data.resultado.status === 'sucesso' ? 'success' :
+                        data.resultado.status === 'erro' ? 'danger' : 'warning';
+                    statusCell.innerHTML = `<span class="badge bg-${statusClass}">${data.resultado.status}</span>`;
+                }
+
+                if (resultadoCell && data.resultado.resumo) {
+                    resultadoCell.textContent = data.resultado.resumo;
+                }
+
+                if (dataCell) {
+                    const agora = new Date();
+                    const dataFormatada = agora.toLocaleDateString('pt-BR') + ' ' +
+                        agora.toLocaleTimeString('pt-BR').substring(0, 5);
+                    dataCell.textContent = dataFormatada;
+                }
             }
 
-            // Atualizar célula de resultados
-            const resultadoCell = btn.closest('tr').querySelector('td[data-label="Resultado"]');
-            if (resultadoCell && data.resultado.resumo) {
-                resultadoCell.textContent = data.resultado.resumo;
-            }
-
-            // Atualizar célula de última checagem
-            const dataCell = btn.closest('tr').querySelector('td[data-label="Última Checagem"]');
-            if (dataCell) {
-                const agora = new Date();
-                const dataFormatada = agora.toLocaleDateString('pt-BR') + ' ' +
-                    agora.toLocaleTimeString('pt-BR').substring(0, 5);
-                dataCell.textContent = dataFormatada;
-            }
-
-            mostrarToast(`Checagem concluída: ${data.message}`, 'success');
+            mostrarToast('Checagem realizada com sucesso!', 'success');
         } catch (error) {
             console.error('Erro na checagem:', error);
             mostrarToast(`Falha na checagem: ${error.message}`, 'danger');
@@ -1035,19 +1086,118 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
             toastElement.remove();
         });
     }
-    // Adicionar evento para checkboxes individuais
-    document.querySelectorAll('.check-cliente').forEach(check => {
-        check.addEventListener('change', function () {
-            atualizarBotaoAcoes();
-        });
-    });
 
-    // Função para atualizar o contador e visibilidade do botão de ações
-    function atualizarBotaoAcoes() {
-        const selecionados = document.querySelectorAll('.check-cliente:checked');
-        const contador = document.getElementById('contadorSelecionados');
-        const dropdownAcoes = document.getElementById('dropdownAcoes');
-        contador.textContent = selecionados.length;
-        dropdownAcoes.style.display = selecionados.length > 0 ? 'inline-block' : 'none';
+    function formatarResultadosChecagem(resultado) {
+        let html = '<div class="mb-3">';
+
+        // Template para cada tipo de checagem
+        if (resultado.status_aparelhos) {
+            html += formatarStatusAparelhos(resultado.status_aparelhos);
+        }
+        if (resultado.detalhes_aparelhos) {
+            html += formatarDetalhesAparelhos(resultado.detalhes_aparelhos);
+        }
+        if (resultado.nova_checagem) {
+            html += formatarNovaChecagem(resultado.nova_checagem);
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    // Função para cada template específico
+    function formatarNovaChecagem(dados) {
+        return `
+  <h5>Nova Checagem</h5>
+  <div class="table-responsive">
+      <table class="table table-sm table-dark">
+          <thead>
+              <tr>
+                  <th>Campo 1</th>
+                  <th>Campo 2</th>
+              </tr>
+          </thead>
+          <tbody>
+              ${dados.map(item => `
+                  <tr>
+                      <td>${item.campo1}</td>
+                      <td>${item.campo2}</td>
+                  </tr>
+              `).join('')}
+          </tbody>
+      </table>
+  </div>`;
+    }
+
+    function formatarStatusAparelhos(dados) {
+        if (!dados || dados.length === 0) {
+            return '<p>Nenhum dado disponível</p>';
+        }
+
+        return `
+    <h5>Aparelhos cadastrados</h5>
+    <div class="table-responsive">
+        <table class="table table-sm table-dark">
+            <thead>
+                <tr>
+                    <th>AET</th>
+                    <th>Situação</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${dados.map(item => `
+                    <tr>
+                        <td>${item.aet}</td>
+                        <td>
+                            <span class="badge ${item.situacao === 'ENVIANDO' ? 'bg-success' : 'bg-danger'}">
+                                ${item.situacao}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    }
+
+    function formatarDetalhesAparelhos(dados) {
+        if (!dados || dados.length === 0) {
+            return '<p>Nenhum dado disponível</p>';
+        }
+
+        return `
+    <h5>Todos os aparelhos</h5>
+    <div class="table-responsive">
+        <table class="table table-sm table-dark">
+            <thead>
+                <tr>
+                    <th>AET</th>
+                    <th>Descrição</th>
+                    <th>Estação</th>
+                    <th>Modalidade</th>
+                    <th>IP</th>
+                    <th>Status</th>
+                    <th>Situação</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${dados.map(item => `
+                    <tr>
+                        <td>${item.aet}</td>
+                        <td>${item.ae_desc || ''}</td>
+                        <td>${item.station_name || ''}</td>
+                        <td>${item.modality || ''}</td>
+                        <td>${item.ip || ''}</td>
+                        <td>${item.status || ''}</td>
+                        <td>
+                            <span class="badge ${item.SITUACAO === 'COM ENVIOS' ? 'bg-success' : 'bg-danger'}">
+                                ${item.SITUACAO}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
     }
 </script>

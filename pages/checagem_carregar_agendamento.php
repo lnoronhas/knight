@@ -33,11 +33,6 @@ if ($agendamento) {
     }
     
     echo json_encode(['success' => true, 'data' => $agendamento]);
-}
-
-if (!$agendamento) {
+} else {
     echo json_encode(['success' => false, 'message' => 'Agendamento não encontrado']);
-    exit();
 }
-
-echo json_encode(['success' => true, 'data' => $agendamento]);
