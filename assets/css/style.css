@@ -108,37 +108,45 @@ footer {
   text-align: center;
 }
 
+/* Responsividade */
 @media (max-width: 768px) {
+  /* Ajustes para tabelas */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Melhora rolagem em dispositivos móveis */
+  }
+
   .table-knight {
     display: block;
     width: 100%;
     overflow-x: auto;
   }
-  
+
   .table-knight thead {
     display: none;
   }
-  
-  .table-knight tbody, 
-  .table-knight tr, 
+
+  .table-knight tbody,
+  .table-knight tr,
   .table-knight td {
     display: block;
     width: 100%;
   }
-  
+
   .table-knight tr {
     margin-bottom: 1rem;
     border: 1px solid #495057;
     border-radius: 0.25rem;
   }
-  
+
   .table-knight td {
+    min-height: 40px;
     padding: 0.75rem;
     border-bottom: 1px solid #495057;
     position: relative;
     padding-left: 50%;
   }
-  
+
   .table-knight td:before {
     content: attr(data-label);
     position: absolute;
@@ -148,88 +156,90 @@ footer {
     font-weight: bold;
     text-align: left;
   }
-  
+
   .table-knight td:last-child {
     border-bottom: none;
   }
-}
 
-#qtd_bilhetagem:disabled {
-    background-color: #87888a;
-    opacity: 1;
-    cursor: not-allowed;
-}
-
-.handle-expand {
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-.handle-expand.collapsed .fa-chevron-down {
-  transform: rotate(0deg);
-}
-.handle-expand:not(.collapsed) .fa-chevron-down {
-  transform: rotate(180deg);
-}
-
-@media (max-width: 768px) {
-  /* Ajuste para a tabela responsiva */
-  .table-responsive .table-knight td[data-label="Qtd Bilhetagem"] {
-      white-space: nowrap;
-      min-width: 80px;
+  /* Botão de ações no topo */
+  #dropdownAcoes {
+    width: 100%;
+    margin-bottom: 1rem;
   }
-  
-  /* Ajuste geral para células da tabela */
-  .table-responsive .table-knight td {
-      padding-top: 12px;
-      padding-bottom: 12px;
+
+  #dropdownAcoes .dropdown-toggle {
+    width: 100%;
+    text-align: center;
+    justify-content: space-between;
+  }
+
+  #dropdownAcoes .badge {
+    float: right;
+    margin-left: 0.5rem;
   }
 }
-.handle-expand i {
-  transition: transform 0.2s ease-in-out;
-}
 
-.handle-expand:not(.collapsed) i {
-  transform: rotate(180deg);
-}
-
-.toggle-password {
-  border-left: none;
-  transition: all 0.3s;
-}
-
-.toggle-password:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.input-group > .form-control:not(:first-child),
-.input-group > .toggle-password {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-.pdf-container {
+/* Garantir que os botões ocupem a largura total */
+.dropdown-menu.w-100 .dropdown-item {
   width: 100%;
-  height: 80vh;
-  border: 1px solid #ddd;
+  white-space: normal; /* Permite que o texto quebre */
+  word-break: break-word; /* Quebra palavras longas */
 }
 
-.input-group-text i {
-  color: white; /* ou outra cor visível */
+/* Ajustes para botões no mobile */
+@media (max-width: 768px) {
+  .btn-sm.w-100 {
+      padding: 0.5rem 1rem; /* Ajusta o padding para melhorar a aparência */
+      font-size: 0.875rem; /* Tamanho de fonte consistente */
+  }
+
+  .dropdown-menu.w-100 {
+      min-width: 100%; /* Garante que o menu ocupe toda a largura */
+  }
+
+  .dropdown-toggle {
+      justify-content: flex-start; /* Alinha o ícone e o texto à esquerda */
+  }
 }
 
-#listaClientesContainer {
-  transition: all 0.3s ease;
+/* Contador de seleção */
+#contadorSelecionados {
+  font-size: 0.875rem;
+  font-weight: bold;
+  margin-left: 0.5rem;
 }
 
-.cliente-checkbox {
-  margin-right: 8px;
+/* Checkbox principal */
+#checkTodos {
+  margin-right: 0.5rem;
 }
 
-.form-check-label {
-  user-select: none; /* Evita seleção de texto ao clicar */
+/* Botões de ações em massa */
+.dropdown-menu-dark {
+  background-color: var(--dark-container);
+  border-color: var(--dark-border);
 }
 
-/* Tema escuro customizado para Select2 */
+.dropdown-menu-dark .dropdown-item {
+  color: var(--dark-text);
+}
+
+.dropdown-menu-dark .dropdown-item:hover {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+/* Botão de progresso */
+#progressModal .modal-content {
+  background-color: var(--dark-container);
+  border-color: var(--dark-border);
+}
+
+#progressModal .progress-bar {
+  background-color: var(--accent-color);
+}
+
+/* Select2 personalizado */
 .select2-container--bootstrap-5 .select2-dropdown {
   background-color: #343a40;
   border-color: #f0ed61;
@@ -270,4 +280,127 @@ footer {
 
 .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
   color: white;
+}
+
+/* Ajustes para checkboxes */
+.form-check-input {
+  margin-right: 0.5rem; /* Espaço entre o checkbox e o texto */
+  vertical-align: middle; /* Alinha o checkbox ao meio */
+}
+
+/* Responsividade para telas pequenas */
+@media (max-width: 768px) {
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Melhora rolagem em dispositivos móveis */
+  }
+
+  .table-knight td {
+    padding: 0.75rem;
+    white-space: normal; /* Permite que o texto quebre */
+    word-break: break-word; /* Quebra palavras longas */
+  }
+
+  .table-knight td:first-child {
+    /* Mantém o tamanho da coluna do checkbox */
+    text-align: left; /* Alinha o checkbox à esquerda */
+    background-color: var(--dark-container); /* Cor de fundo consistente */
+  }
+
+  .form-check-input {
+    margin-right: 0.25rem; /* Reduz espaço no mobile */
+  }
+}
+
+/* Tabela responsiva */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Melhora rolagem em dispositivos móveis */
+}
+
+.table-knight {
+  border-color: var(--dark-border);
+  color: var(--dark-text);
+}
+
+.table-knight th,
+.table-knight td {
+  white-space: nowrap; /* Evita que o texto quebre por padrão */
+}
+
+/* Responsividade para telas pequenas */
+@media (max-width: 768px) {
+  .table-knight thead {
+    display: none; /* Esconde o cabeçalho da tabela */
+  }
+
+  .table-knight tbody,
+  .table-knight tr,
+  .table-knight td {
+    display: block;
+    width: 100%;
+  }
+
+  .table-knight tr {
+    margin-bottom: 1rem;
+    border: 1px solid #495057;
+    border-radius: 0.25rem;
+  }
+
+  .table-knight td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #495057;
+    position: relative;
+    padding-left: 50%; /* Espaço para o rótulo */
+    white-space: normal; /* Permite que o texto quebre */
+    word-break: break-word; /* Quebra palavras longas */
+  }
+
+  .table-knight td:before {
+    content: attr(data-label); /* Exibe o rótulo antes do conteúdo */
+    position: absolute;
+    left: 0.75rem;
+    width: 45%;
+    padding-right: 1rem;
+    font-weight: bold;
+    text-align: left;
+  }
+
+  .table-knight td:last-child {
+    border-bottom: none;
+  }
+
+  /* Ajuste para a primeira coluna (checkbox) */
+  .table-knight td:first-child {
+    text-align: left;
+    background-color: var(--dark-container);
+  }
+}
+
+/* Ajustes para botões de ações */
+.d-flex.flex-column.gap-2 {
+  align-items: stretch; /* Garante que os botões ocupem toda a largura */
+}
+
+/* Responsividade para telas pequenas */
+@media (max-width: 768px) {
+  .btn-sm.w-100 {
+      padding: 0.5rem 1rem; /* Ajusta o padding para melhorar a aparência */
+  }
+
+  .dropdown-menu.w-100 {
+      min-width: 100%; /* Garante que o menu ocupe toda a largura */
+  }
+}
+
+/* Garantir que o checkbox "Selecionar todos" seja visível no mobile */
+@media (max-width: 768px) {
+  .table-knight th:first-child {
+      width: 40px; /* Largura fixa para a coluna do checkbox */
+      text-align: center; /* Centralizar o conteúdo */
+  }
+
+  .table-knight th:first-child .form-check-input {
+      margin: auto; /* Centralizar o checkbox verticalmente */
+  }
 }
