@@ -34,6 +34,7 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
     <div class="col-md-8">
         <h2><i class="fas fa-satellite-dish"></i> Checagem de Equipamentos</h2>
     </div>
+
     <div class="col-md-4 text-md-end">
         <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#agendamentoModal">
             <i class="fas fa-calendar-alt"></i> Agendar Checagem
@@ -42,7 +43,30 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
             <i class="fas fa-file-pdf"></i> Relatório Geral
         </button>
     </div>
+    
 </div>
+<div class="row mb-4">
+    <div class="col-md-8">
+<div class="dropdown d-inline-block me-2" id="dropdownAcoes" style="display: none;">
+        <button class="btn btn-primary dropdown-toggle" type="button" id="btnAcoesMultiplas" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="fas fa-tasks"></i> Ações em Massa <span class="badge bg-danger" id="contadorSelecionados">0</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="btnAcoesMultiplas">
+            <li><a class="dropdown-item" href="#" id="checarStatusMultiplos">
+                    <i class="fas fa-sync-alt"></i> Checar Status dos Aparelhos</a></li>
+            <li><a class="dropdown-item" href="#" id="checarDetalhesMultiplos">
+                    <i class="fas fa-list-ul"></i> Checar Detalhes Completos</a></li>
+            <li>
+                <hr class="dropdown-divider">
+            </li>
+            <li><a class="dropdown-item" href="#" id="limparSelecao">
+                    <i class="fas fa-times"></i> Limpar Seleção</a></li>
+        </ul>
+    </div>
+    </div>
+    
+    </div>
 
 <!-- Status do agendamento -->
 <?php if ($agendamentoAtivo): ?>
@@ -88,6 +112,11 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
             <table class="table table-dark table-striped table-hover table-knight">
                 <thead>
                     <tr>
+                        <th scope="col" style="width: 40px;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="checkTodos">
+                            </div>
+                        </th>
                         <th scope="col">Cliente</th>
                         <th scope="col">Status</th>
                         <th scope="col" class="text-nowrap">Última Checagem</th>
@@ -99,6 +128,12 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                 <tbody>
                     <?php foreach ($clientes as $cliente): ?>
                         <tr>
+                            <td data-label="" style="width: 40px;">
+                                <div class="form-check">
+                                    <input class="form-check-input check-cliente" type="checkbox"
+                                        value="<?= $cliente['id'] ?>" data-nome="<?= htmlspecialchars($cliente['nome']) ?>">
+                                </div>
+                            </td>
                             <td data-label="Cliente"><?= $cliente['nome'] ?></td>
 
                             <td data-label="Status">
@@ -131,10 +166,22 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                             </td>
 
                             <td data-label="Ações" class="text-nowrap">
-                                <button class="btn btn-sm btn-danger btn-checar-agora"
-                                    data-cliente-id="<?= $cliente['id'] ?>">
-                                    <i class="fas fa-sync-alt"></i> Checar Agora
-                                </button>
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-danger dropdown-toggle" type="button"
+                                        id="btnChecarDropdown-<?= $cliente['id'] ?>" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        <i class="fas fa-sync-alt"></i> Checagem
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-dark"
+                                        aria-labelledby="btnChecarDropdown-<?= $cliente['id'] ?>">
+                                        <li><a class="dropdown-item btn-checar-agora" href="#"
+                                                data-cliente-id="<?= $cliente['id'] ?>" data-tipo-checagem="status">Status
+                                                dos Aparelhos</a></li>
+                                        <li><a class="dropdown-item btn-checar-agora" href="#"
+                                                data-cliente-id="<?= $cliente['id'] ?>"
+                                                data-tipo-checagem="detalhes">Detalhes Completos</a></li>
+                                    </ul>
+                                </div>
 
                                 <?php if ($cliente['ultima_checagem']): ?>
                                     <button class="btn btn-sm btn-info btn-relatorio" data-cliente-id="<?= $cliente['id'] ?>"
@@ -181,9 +228,9 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                                                         <tbody>
                                                             <?php
                                                             $historico = $pdo->prepare("SELECT * FROM checagens 
-                                WHERE cliente_id = ? 
-                                ORDER BY data DESC 
-                                LIMIT 10");
+                                                                                        WHERE cliente_id = ? 
+                                                                                        ORDER BY data DESC 
+                                                                                        LIMIT 10");
                                                             $historico->execute([$cliente['id']]);
                                                             while ($checagem = $historico->fetch()):
                                                                 // Usar o status diretamente da tabela checagens em vez do JSON
@@ -452,6 +499,33 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
         </div>
     </div>
 </div>
+
+
+<div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title">Executando Checagens</h5>
+            </div>
+            <div class="modal-body">
+                <p>Processando checagens em lote. Por favor, aguarde...</p>
+                <div class="progress mb-3">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                        role="progressbar" style="width: 0%"></div>
+                </div>
+                <p class="mb-1">Cliente atual: <span id="progressCliente">-</span></p>
+                <p class="text-center"><span id="progressAtual">0</span> de <span id="progressTotal">0</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
+    <!-- Os toasts serão inseridos aqui dinamicamente -->
+</div>
+
+
+<?php include '../includes/footer.php'; ?>
+
 
 <script>
     // Variáveis globais para os modais
@@ -810,6 +884,218 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                 new bootstrap.Modal(document.getElementById('detalhesChecagemModal')).show();
             });
     }
-</script>
+    // Gerenciar seleção de clientes
+    document.getElementById('checkTodos').addEventListener('change', function () {
+        document.querySelectorAll('.check-cliente').forEach(check => {
+            check.checked = this.checked;
+        });
+        atualizarBotaoAcoes();
+    });
 
-<?php include '../includes/footer.php'; ?>
+    // Atualizar contador de selecionados e visibilidade do botão de ações
+    document.addEventListener('click', function (e) {
+        if (e.target && e.target.classList.contains('check-cliente')) {
+            atualizarBotaoAcoes();
+        }
+    });
+
+    function atualizarBotaoAcoes() {
+        const selecionados = document.querySelectorAll('.check-cliente:checked');
+        const contador = document.getElementById('contadorSelecionados');
+        const dropdownAcoes = document.getElementById('dropdownAcoes');
+
+        contador.textContent = selecionados.length;
+        dropdownAcoes.style.display = selecionados.length > 0 ? 'inline-block' : 'none';
+    }
+
+    // Limpar seleção
+    document.getElementById('limparSelecao').addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelectorAll('.check-cliente').forEach(check => {
+            check.checked = false;
+        });
+        document.getElementById('checkTodos').checked = false;
+        atualizarBotaoAcoes();
+    });
+
+    // Substituir o código atual do evento do botão "Checar Agora"
+    document.querySelectorAll('.btn-checar-agora').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            const clienteId = this.getAttribute('data-cliente-id');
+            const tipoChecagem = this.getAttribute('data-tipo-checagem');
+            const clienteNome = this.closest('tr')?.querySelector('td[data-label="Cliente"]')?.textContent || 'Cliente';
+
+            if (confirm(`Deseja executar a checagem de ${tipoChecagem === 'status' ? 'status dos aparelhos' : 'detalhes completos'} para ${clienteNome}?`)) {
+                executarChecagem(clienteId, tipoChecagem);
+            }
+        });
+    });
+
+    // Checagem em massa
+    document.getElementById('checarStatusMultiplos').addEventListener('click', function (e) {
+        e.preventDefault();
+        executarChecagemMultipla('status');
+    });
+
+    document.getElementById('checarDetalhesMultiplos').addEventListener('click', function (e) {
+        e.preventDefault();
+        executarChecagemMultipla('detalhes');
+    });
+
+    function executarChecagemMultipla(tipoChecagem) {
+        const selecionados = document.querySelectorAll('.check-cliente:checked');
+        if (selecionados.length === 0) return;
+
+        const clientesIds = Array.from(selecionados).map(check => check.value);
+        const nomes = Array.from(selecionados).map(check => check.getAttribute('data-nome'));
+
+        if (confirm(`Deseja executar a checagem de ${tipoChecagem === 'status' ? 'status dos aparelhos' : 'detalhes completos'} para ${selecionados.length} clientes selecionados?`)) {
+            // Mostrar indicador de progresso
+            const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+            document.getElementById('progressTotal').textContent = clientesIds.length;
+            document.getElementById('progressAtual').textContent = '0';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressCliente').textContent = '';
+            progressModal.show();
+
+            // Executar checagens em sequência
+            let completados = 0;
+
+            function processarProximo(index) {
+                if (index >= clientesIds.length) {
+                    // Finalizado
+                    setTimeout(() => {
+                        progressModal.hide();
+                        alert('Todas as checagens foram concluídas!');
+                    }, 1000);
+                    return;
+                }
+
+                const clienteId = clientesIds[index];
+                const nome = nomes[index];
+
+                // Atualizar progresso
+                document.getElementById('progressCliente').textContent = nome;
+                document.getElementById('progressAtual').textContent = index + 1;
+                document.getElementById('progressBar').style.width = `${((index + 1) / clientesIds.length) * 100}%`;
+
+                // Executar checagem
+                fetch('checagem_executar.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `cliente_id=${clienteId}&tipo_checagem=${tipoChecagem}`
+                })
+                    .then(res => res.json())
+                    .catch(error => {
+                        console.error(`Erro na checagem do cliente ${nome}:`, error);
+                    })
+                    .finally(() => {
+                        completados++;
+                        // Processar o próximo após um pequeno delay
+                        setTimeout(() => processarProximo(index + 1), 500);
+                    });
+            }
+
+            // Iniciar o processamento
+            processarProximo(0);
+        }
+    }
+
+    // Atualizar a função de execução para incluir o tipo de checagem
+    async function executarChecagem(clienteId, tipoChecagem = 'status') {
+        const btn = document.querySelector(`[data-cliente-id="${clienteId}"][data-tipo-checagem="${tipoChecagem}"]`) ||
+            document.querySelector(`[data-cliente-id="${clienteId}"]`);
+        const originalHTML = btn.innerHTML;
+
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processando...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('checagem_executar.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `cliente_id=${clienteId}&tipo_checagem=${tipoChecagem}`
+            });
+
+            const responseText = await response.text();
+
+            if (!responseText.trim()) {
+                throw new Error('Resposta vazia do servidor');
+            }
+
+            const data = JSON.parse(responseText);
+
+            if (!data.success) {
+                throw new Error(data.message || 'Erro desconhecido');
+            }
+
+            // Atualizar interface
+            const statusCell = btn.closest('tr').querySelector('td[data-label="Status"]');
+            if (statusCell) {
+                const statusClass = data.resultado.status === 'sucesso' ? 'success' :
+                    data.resultado.status === 'erro' ? 'danger' : 'warning';
+
+                statusCell.innerHTML = `
+                    <span class="badge bg-${statusClass}">${data.resultado.status}</span>
+                `;
+            }
+
+            // Atualizar célula de resultados
+            const resultadoCell = btn.closest('tr').querySelector('td[data-label="Resultado"]');
+            if (resultadoCell && data.resultado.resumo) {
+                resultadoCell.textContent = data.resultado.resumo;
+            }
+
+            // Atualizar célula de última checagem
+            const dataCell = btn.closest('tr').querySelector('td[data-label="Última Checagem"]');
+            if (dataCell) {
+                const agora = new Date();
+                const dataFormatada = agora.toLocaleDateString('pt-BR') + ' ' +
+                    agora.toLocaleTimeString('pt-BR').substring(0, 5);
+                dataCell.textContent = dataFormatada;
+            }
+
+            mostrarToast(`Checagem concluída: ${data.message}`, 'success');
+
+        } catch (error) {
+            console.error('Erro na checagem:', error);
+            mostrarToast(`Falha na checagem: ${error.message}`, 'danger');
+        } finally {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+    }
+    function mostrarToast(mensagem, tipo = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toastId = 'toast-' + Date.now();
+
+        const toastHTML = `
+            <div id="${toastId}" class="toast align-items-center text-white bg-${tipo} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${mensagem}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', toastHTML);
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: 5000
+        });
+        toast.show();
+
+        // Remover elemento após fechar
+        toastElement.addEventListener('hidden.bs.toast', function () {
+            toastElement.remove();
+        });
+    }
+</script>
