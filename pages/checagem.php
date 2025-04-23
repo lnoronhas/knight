@@ -564,28 +564,6 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
             });
         });
 
-        document.addEventListener('click', function (e) {
-            // Botões de checagem individual
-            if (e.target.closest('.btn-checar-agora')) {
-                e.preventDefault();
-                const btn = e.target.closest('.btn-checar-agora');
-                const clienteId = btn.getAttribute('data-cliente-id');
-                const tipoChecagem = btn.getAttribute('data-tipo-checagem');
-                const clienteNome = btn.closest('tr')?.querySelector('td[data-label="Cliente"]')?.textContent || 'Cliente';
-
-                if (confirm(`Deseja executar a checagem para ${clienteNome}?`)) {
-                    executarChecagem(clienteId, tipoChecagem);
-                }
-            }
-
-            // Botões de ação em massa
-            if (e.target.matches('#checarStatusMultiplos, #checarDetalhesMultiplos, #checarTodosMultiplos')) {
-                e.preventDefault();
-                const tipoChecagem = e.target.getAttribute('data-tipo-checagem');
-                executarChecagemMultipla(tipoChecagem);
-            }
-        });
-
         // Confirmar checagem
         document.getElementById('confirmarChecagem')?.addEventListener('click', function () {
             const clienteId = document.getElementById('clienteIdChecagem').value;
@@ -782,7 +760,145 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
             }
         }
 
-    });
+        // Delegação de eventos para botões de checagem individual
+        document.addEventListener('click', function (e) {
+            // Botões de checagem individual
+            if (e.target.closest('.btn-checar-agora')) {
+                e.preventDefault();
+                const btn = e.target.closest('.btn-checar-agora');
+                const clienteId = btn.getAttribute('data-cliente-id');
+                const tipoChecagem = btn.getAttribute('data-tipo-checagem');
+                const clienteNome = btn.closest('tr')?.querySelector('td[data-label="Cliente"]')?.textContent || 'Cliente';
+
+                if (confirm(`Deseja executar a checagem para ${clienteNome}?`)) {
+                    executarChecagem(clienteId, tipoChecagem);
+                }
+            }
+
+            // Botões para checagem em massa
+            if (e.target.matches('#checarStatusMultiplos, #checarDetalhesMultiplos, #checarTodosMultiplos')) {
+                e.preventDefault();
+                const tipoChecagem = e.target.getAttribute('data-tipo-checagem');
+                executarChecagemMultipla(tipoChecagem);
+            }
+        });
+
+        // Apenas UMA definição da função executarChecagem
+        async function executarChecagem(clienteId, tipoChecagem = 'status') {
+            // Encontrar o botão correto com base nos dados do cliente e tipo
+            const btn = document.querySelector(`[data-cliente-id="${clienteId}"][data-tipo-checagem="${tipoChecagem}"]`) ||
+                document.querySelector(`[data-cliente-id="${clienteId}"]`); // Fallback
+
+            // Se não encontrou botão, usar um placeholder para feedback
+            const originalHTML = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processando...';
+                btn.disabled = true;
+            }
+
+            try {
+                console.log(`Executando checagem para cliente ${clienteId}, tipo ${tipoChecagem}`);
+
+                const response = await fetch('checagem_executar.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `cliente_id=${clienteId}&tipo_checagem=${tipoChecagem}`
+                });
+
+                const responseText = await response.text();
+                if (!responseText.trim()) {
+                    throw new Error('Resposta vazia do servidor');
+                }
+
+                const data = JSON.parse(responseText);
+                if (!data.success) {
+                    throw new Error(data.message || 'Erro desconhecido');
+                }
+
+                // Atualizar interface
+                const row = btn ? btn.closest('tr') : document.querySelector(`[data-cliente-id="${clienteId}"]`)?.closest('tr');
+                if (row) {
+                    const statusCell = row.querySelector('td[data-label="Status"]');
+                    const resultadoCell = row.querySelector('td[data-label="Resultado"]');
+                    const dataCell = row.querySelector('td[data-label="Última Checagem"]');
+
+                    if (statusCell) {
+                        const statusClass = data.resultado.status === 'sucesso' ? 'success' :
+                            data.resultado.status === 'erro' ? 'danger' : 'warning';
+                        statusCell.innerHTML = `<span class="badge bg-${statusClass}">${data.resultado.status}</span>`;
+                    }
+
+                    if (resultadoCell && data.resultado.resumo) {
+                        resultadoCell.textContent = data.resultado.resumo;
+                    }
+
+                    if (dataCell) {
+                        const agora = new Date();
+                        const dataFormatada = agora.toLocaleDateString('pt-BR') + ' ' +
+                            agora.toLocaleTimeString('pt-BR').substring(0, 5);
+                        dataCell.textContent = dataFormatada;
+                    }
+                }
+
+                mostrarToast('Checagem realizada com sucesso!', 'success');
+            } catch (error) {
+                console.error('Erro na checagem:', error);
+                mostrarToast(`Falha na checagem: ${error.message}`, 'danger');
+            } finally {
+                if (btn) {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        // Definição da função executarChecagemMultipla
+        async function executarChecagemMultipla(tipoChecagem) {
+            const selecionados = document.querySelectorAll('.check-cliente:checked');
+            if (selecionados.length === 0) {
+                mostrarToast('Selecione pelo menos um cliente', 'warning');
+                return;
+            }
+
+            const clientesIds = Array.from(selecionados).map(check => check.value);
+            const nomes = Array.from(selecionados).map(check => check.getAttribute('data-nome'));
+
+            const tiposTexto = {
+                'status': 'status dos aparelhos',
+                'detalhes': 'todos os aparelhos',
+                'ambos': 'checagem completa'
+            };
+
+            if (confirm(`Deseja executar a checagem de ${tiposTexto[tipoChecagem]} para ${selecionados.length} clientes selecionados?`)) {
+                // Mostrar modal de progresso
+                const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+                document.getElementById('progressTotal').textContent = clientesIds.length;
+                document.getElementById('progressAtual').textContent = '0';
+                document.getElementById('progressBar').style.width = '0%';
+                progressModal.show();
+
+                for (let i = 0; i < clientesIds.length; i++) {
+                    const clienteId = clientesIds[i];
+                    const nome = nomes[i];
+
+                    // Atualizar progresso
+                    document.getElementById('progressCliente').textContent = nome;
+                    document.getElementById('progressAtual').textContent = i + 1;
+                    document.getElementById('progressBar').style.width = `${((i + 1) / clientesIds.length) * 100}%`;
+
+                    try {
+                        await executarChecagem(clienteId, tipoChecagem);
+                    } catch (error) {
+                        console.error(`Erro na checagem do cliente ${nome}:`, error);
+                    }
+                }
+
+                progressModal.hide();
+                mostrarToast('Todas as checagens foram concluídas!', 'success');
+            }
+        }
 
     });
 
@@ -906,13 +1022,7 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
             });
     }
 
-    // Gerenciar seleção de clientes
-    document.getElementById('checkTodos').addEventListener('change', function () {
-        document.querySelectorAll('.check-cliente').forEach(check => {
-            check.checked = this.checked;
-        });
-        atualizarBotaoAcoes();
-    });
+
 
     // Atualizar contador de selecionados e visibilidade do botão de ações
     document.addEventListener('click', function (e) {
@@ -951,114 +1061,6 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
         e.preventDefault();
         executarChecagemMultipla('detalhes');
     });
-
-    async function executarChecagemMultipla(tipoChecagem) {
-    const selecionados = document.querySelectorAll('.check-cliente:checked');
-    if (selecionados.length === 0) {
-        mostrarToast('Selecione pelo menos um cliente', 'warning');
-        return;
-    }
-
-    const clientesIds = Array.from(selecionados).map(check => check.value);
-    const nomes = Array.from(selecionados).map(check => check.getAttribute('data-nome'));
-
-    const tiposTexto = {
-        'status': 'status dos aparelhos',
-        'detalhes': 'todos os aparelhos',
-        'ambos': 'checagem completa'
-    };
-
-    if (confirm(`Deseja executar a checagem de ${tiposTexto[tipoChecagem]} para ${selecionados.length} clientes selecionados?`)) {
-        // Mostrar modal de progresso
-        const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
-        document.getElementById('progressTotal').textContent = clientesIds.length;
-        document.getElementById('progressAtual').textContent = '0';
-        document.getElementById('progressBar').style.width = '0%';
-        progressModal.show();
-
-        for (let i = 0; i < clientesIds.length; i++) {
-            const clienteId = clientesIds[i];
-            const nome = nomes[i];
-
-            // Atualizar progresso
-            document.getElementById('progressCliente').textContent = nome;
-            document.getElementById('progressAtual').textContent = i + 1;
-            document.getElementById('progressBar').style.width = `${((i + 1) / clientesIds.length) * 100}%`;
-
-            try {
-                await executarChecagem(clienteId, tipoChecagem);
-            } catch (error) {
-                console.error(`Erro na checagem do cliente ${nome}:`, error);
-            }
-        }
-
-        progressModal.hide();
-        mostrarToast('Todas as checagens foram concluídas!', 'success');
-    }
-}
-
-    // Atualizar a função de execução para incluir o tipo de checagem
-    async function executarChecagem(clienteId, tipoChecagem = 'status') {
-        const btn = document.querySelector(`[data-cliente-id="${clienteId}"][data-tipo-checagem="${tipoChecagem}"]`);
-        if (!btn) return;
-
-        const originalHTML = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processando...';
-        btn.disabled = true;
-
-        try {
-            const response = await fetch('checagem_executar.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `cliente_id=${clienteId}&tipo_checagem=${tipoChecagem}`
-            });
-
-            const responseText = await response.text();
-            if (!responseText.trim()) {
-                throw new Error('Resposta vazia do servidor');
-            }
-
-            const data = JSON.parse(responseText);
-            if (!data.success) {
-                throw new Error(data.message || 'Erro desconhecido');
-            }
-
-            // Atualizar interface
-            const row = btn.closest('tr');
-            if (row) {
-                const statusCell = row.querySelector('td[data-label="Status"]');
-                const resultadoCell = row.querySelector('td[data-label="Resultado"]');
-                const dataCell = row.querySelector('td[data-label="Última Checagem"]');
-
-                if (statusCell) {
-                    const statusClass = data.resultado.status === 'sucesso' ? 'success' :
-                        data.resultado.status === 'erro' ? 'danger' : 'warning';
-                    statusCell.innerHTML = `<span class="badge bg-${statusClass}">${data.resultado.status}</span>`;
-                }
-
-                if (resultadoCell && data.resultado.resumo) {
-                    resultadoCell.textContent = data.resultado.resumo;
-                }
-
-                if (dataCell) {
-                    const agora = new Date();
-                    const dataFormatada = agora.toLocaleDateString('pt-BR') + ' ' +
-                        agora.toLocaleTimeString('pt-BR').substring(0, 5);
-                    dataCell.textContent = dataFormatada;
-                }
-            }
-
-            mostrarToast('Checagem realizada com sucesso!', 'success');
-        } catch (error) {
-            console.error('Erro na checagem:', error);
-            mostrarToast(`Falha na checagem: ${error.message}`, 'danger');
-        } finally {
-            btn.innerHTML = originalHTML;
-            btn.disabled = false;
-        }
-    }
 
     function mostrarToast(mensagem, tipo = 'info') {
         const container = document.getElementById('toastContainer');
