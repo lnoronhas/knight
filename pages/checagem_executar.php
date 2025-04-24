@@ -194,7 +194,8 @@ function checarMySQLAtual($cliente, $tipoChecagem = 'status')
                         ) AS envios ON envios.ae_title = a.aet
                         LEFT JOIN pacsdb.series ser on ser.src_aet = a.aet
                         WHERE a.aet not in ('JBOSS','ANIMATI_PACS')
-                        GROUP BY a.aet, a.ae_desc, ser.station_name, ser.modality, envios.ip, envios.status";
+                        GROUP BY a.aet, a.ae_desc, ser.station_name, ser.modality, envios.ip, envios.status
+                                ";
 
                 $detalhes = $pdo->query($queryDetalhes)->fetchAll(PDO::FETCH_ASSOC);
                 $resultado['detalhes_aparelhos'] = $detalhes;

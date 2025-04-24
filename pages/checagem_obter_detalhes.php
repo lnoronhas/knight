@@ -4,6 +4,7 @@ include '../includes/defs.php';
 
 header('Content-Type: application/json');
 
+
 try {
     $checagemId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
     if (!$checagemId) {

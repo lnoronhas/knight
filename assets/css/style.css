@@ -427,3 +427,24 @@ footer {
       margin: auto; /* Centralizar o checkbox verticalmente */
   }
 }
+
+.accordion-button.collapsed{
+  background-color: var(--dark-container) !important;
+  color: var(--dark-text) !important;
+  border-color: var(--dark-border) !important;
+  box-shadow: none !important;
+
+}
+
+.accordion-collapse.collapse{
+  background-color: var(--dark-container) !important;
+  color: var(--dark-text) !important;
+  border-color: var(--dark-border) !important;
+  box-shadow: none !important;
+}
+.accordion-body{
+  background-color: var(--dark-container) !important;
+  color: var(--dark-text) !important;
+  border-color: var(--dark-border) !important;
+  box-shadow: none !important;
+}
