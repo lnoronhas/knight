@@ -1,11 +1,8 @@
 <?php
-include '../includes/header.php';
-include '../includes/search.php';
+include '../includes/functions.php';
 include '../includes/db.php';
 include '../includes/defs.php';
-include '../includes/functions.php';
-$usuarioLogado = $_SESSION['usuario'];
-$tipoLogado = $usuarioLogado['tipo'];
+
 // Buscar agendamento ativo
 $agendamentoAtivo = $pdo->query("SELECT * FROM agendamentos_checagem WHERE ativo = 1 ORDER BY id DESC LIMIT 1")->fetch();
 // Buscar todos os clientes com informações da última checagem
@@ -23,7 +20,6 @@ $query = "SELECT c.*,
           ORDER BY c.nome";
 $clientes = $pdo->query($query)->fetchAll();
 $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
-
 if (isset($_GET['action']) && $_GET['action'] === 'reload' && isset($_GET['cliente_id'])) {
     try {
         include_once '../includes/functions.php'; // Certifique-se de incluir o arquivo de funções
@@ -52,6 +48,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'reload' && isset($_GET['clien
         exit;
     }
 }
+
+
+include '../includes/header.php';
+$usuarioLogado = $_SESSION['usuario'];
+$tipoLogado = $usuarioLogado['tipo'];
+include '../includes/search.php';
 ?>
 <div class="row mb-4">
     <div class="col-md-8">
@@ -73,6 +75,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'reload' && isset($_GET['clien
                 data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-tasks"></i> Ações em Massa <span class="badge bg-danger"
                     id="contadorSelecionados">0</span>
+            </button>
+            <!-- Botão de reload geral -->
+            <button class="btn btn-warning" id="btnReloadPagina">
+                <i class="fas fa-sync-alt"></i> Recarregar Página
             </button>
             <ul class="dropdown-menu dropdown-menu-dark">
                 <li><a class="dropdown-item" href="#" id="checarStatusMultiplos" data-tipo-checagem="status">
@@ -234,11 +240,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'reload' && isset($_GET['clien
                                         <i class="fas fa-minus"></i>
                                     </span>
                                 <?php endif; ?>
-                                <!-- Botão de reload -->
-                                <button class="btn btn-sm btn-outline-warning btn-reload-detalhes"
-                                    data-cliente-id="<?= $cliente['id'] ?>">
-                                    <i class="fas fa-sync-alt"></i>
-                                </button>
                             </td>
                         </tr>
                         <?php if ($cliente['total_checagens'] > 0): ?>
@@ -970,47 +971,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'reload' && isset($_GET['clien
             }
         }
 
-        document.querySelectorAll('.btn-reload-detalhes').forEach(button => {
-            button.addEventListener('click', async function () {
-                const clienteId = this.getAttribute('data-cliente-id');
-                const linha = this.closest('tr'); // Linha correspondente na tabela
-
-                // Mostrar um spinner no botão enquanto carrega
-                const originalHTML = this.innerHTML;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-                this.disabled = true;
-
-                try {
-                    // Fazer a requisição para buscar os detalhes atualizados
-                    const response = await fetch(`checagem.php?action=reload&cliente_id=${clienteId}`);
-                    if (!response.ok) {
-                        throw new Error('Erro ao carregar os detalhes do cliente');
-                    }
-
-                    const data = await response.json();
-
-                    // Atualizar a linha com os novos dados
-                    const statusBadge = linha.querySelector('[data-label="Status"] .badge');
-                    const ultimaChecagem = linha.querySelector('[data-label="Última Checagem"]');
-                    const resultado = linha.querySelector('[data-label="Resultado"]');
-
-                    // Atualizar os campos com os novos dados
-                    statusBadge.textContent = data.status || 'Desconhecido';
-                    statusBadge.className = `badge bg-${data.status === 'sucesso' ? 'success' : 'danger'}`;
-                    ultimaChecagem.textContent = data.ultima_checagem || '-';
-                    resultado.textContent = data.resumo || '-';
-
-                    alert('Detalhes atualizados com sucesso!');
-                } catch (error) {
-                    console.error('Erro ao atualizar os detalhes:', error);
-                    alert('Erro ao atualizar os detalhes do cliente.');
-                } finally {
-                    // Restaurar o botão ao estado original
-                    this.innerHTML = originalHTML;
-                    this.disabled = false;
-                }
+        // Evento para o botão de reload
+        const btnReloadPagina = document.getElementById('btnReloadPagina');
+        if (btnReloadPagina) {
+            btnReloadPagina.addEventListener('click', function () {
+                location.reload(); // Recarregar a página
             });
-        });
+        }
     });
 
     // Corrigir foco e cores no campo Select2

@@ -116,40 +116,6 @@ function calcularProximaExecucao($dadosAgendamento) {
   return $now->format('Y-m-d H:i:s');
 }
 
-function obterUltimaChecagemCliente($clienteId)
-{
-    global $pdo;
-
-    // Buscar a última checagem associada ao cliente
-    $stmt = $pdo->prepare("
-        SELECT ch.id as checagem_id, ch.data as ultima_checagem, ch.resultado_json, ch.status
-        FROM checagens ch
-        WHERE ch.cliente_id = ?
-        ORDER BY ch.data DESC
-        LIMIT 1
-    ");
-    $stmt->execute([$clienteId]);
-    $checagem = $stmt->fetch();
-
-    // Verificar se a checagem foi encontrada
-    if (!$checagem) {
-        throw new Exception("Nenhuma checagem encontrada para este cliente");
-    }
-
-    // Decodificar o JSON do resultado
-    $resultado = json_decode($checagem['resultado_json'], true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        throw new Exception("Dados da checagem inválidos");
-    }
-
-    // Retornar os dados necessários para o reload da linha
-    return [
-        'checagem_id' => $checagem['checagem_id'],
-        'ultima_checagem' => $checagem['ultima_checagem'],
-        'status' => $checagem['status'],
-        'resumo' => $resultado['resumo'] ?? '-'
-    ];
-}
 
 
 
