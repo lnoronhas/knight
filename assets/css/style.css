@@ -186,6 +186,25 @@ footer {
   word-break: break-word; /* Quebra palavras longas */
 }
 
+/* Evitar que o texto seja cortado na tabela */
+.table-knight td, .table-knight th {
+  white-space: normal; /* Permite quebra de linha */
+  word-break: break-word; /* Quebra palavras longas */
+}
+
+/* Ajustar a tabela para telas grandes */
+@media (min-width: 1200px) {
+  .table-responsive {
+    overflow-x: visible; /* Remove a barra de rolagem horizontal em telas grandes */
+  }
+}
+
+.dropdown-menu {
+  max-width: 100%; /* Garante que o menu não ultrapasse a largura da tela */
+  word-wrap: break-word; /* Quebra palavras longas */
+  white-space: normal; /* Permite que o texto quebre em várias linhas */
+}
+
 /* Ajustes para botões no mobile */
 @media (max-width: 768px) {
   .btn-sm.w-100 {
@@ -314,13 +333,17 @@ footer {
 
 /* Tabela responsiva */
 .table-responsive {
-  overflow-x: auto;
+  overflow-x: visible;
   -webkit-overflow-scrolling: touch; /* Melhora rolagem em dispositivos móveis */
 }
 
 .table-knight {
   border-color: var(--dark-border);
   color: var(--dark-text);
+}
+.table-knight {
+  width: 100%; /* Ocupa toda a largura */
+  table-layout: auto; /* Permite que as colunas ajustem sua largura automaticamente */
 }
 
 .table-knight th,

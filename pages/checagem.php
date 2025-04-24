@@ -133,11 +133,10 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                                     $cor = match ($cliente['status']) {
                                         'sucesso' => 'success',
                                         'erro' => 'danger',
-                                        'aviso' => 'warning',
                                         default => 'secondary'
                                     };
                                     ?>
-                                    <span class="badge bg-<?= $cor ?>"><?= ucfirst($cliente['status']) ?></span>
+                                    <span class="badge bg-<?= $cor ?>"><?= ucfirst($cliente['status'] ?? 'desconhecido') ?></span>
                                 <?php else: ?>
                                     <span class="badge bg-secondary">Nunca checado</span>
                                 <?php endif; ?>
@@ -163,18 +162,24 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-dark"
                                             aria-labelledby="btnChecarDropdown-<?= $cliente['id'] ?>">
-                                            <li><a class="dropdown-item btn-checar-agora" href="#"
+                                            <li>
+                                                <a class="dropdown-item btn-checar-agora" href="#"
                                                     data-cliente-id="<?= $cliente['id'] ?>"
-                                                    data-tipo-checagem="status">Aparelhos cadastrados</a></li>
-                                            <li><a class="dropdown-item btn-checar-agora" href="#"
+                                                    data-tipo-checagem="status">Aparelhos cadastrados</a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item btn-checar-agora" href="#"
                                                     data-cliente-id="<?= $cliente['id'] ?>"
-                                                    data-tipo-checagem="detalhes">Todos os aparelhos</a></li>
+                                                    data-tipo-checagem="detalhes">Todos os aparelhos</a>
+                                            </li>
                                             <li>
                                                 <hr class="dropdown-divider">
                                             </li>
-                                            <li><a class="dropdown-item btn-checar-agora" href="#"
+                                            <li>
+                                                <a class="dropdown-item btn-checar-agora" href="#"
                                                     data-cliente-id="<?= $cliente['id'] ?>"
-                                                    data-tipo-checagem="ambos">Checagem completa</a></li>
+                                                    data-tipo-checagem="ambos">Checagem completa</a>
+                                            </li>
                                         </ul>
                                     </div>
                                     <!-- Botão Relatório -->
@@ -543,14 +548,15 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
 <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
     <!-- Os toasts serão inseridos aqui dinamicamente -->
 </div>
-<?php include '../includes/footer.php'; ?>
+
 <script>
+    console.log('Script carregado com sucesso!');
     // Variáveis globais para os modais
     let agendamentoModal;
     let confirmarChecagemModal;
     let pdfViewerModal;
-    document.addEventListener('DOMContentLoaded', function () {
 
+    document.addEventListener('DOMContentLoaded', function () {
         // Inicializar modais
         agendamentoModal = new bootstrap.Modal(document.getElementById('agendamentoModal'));
         confirmarChecagemModal = new bootstrap.Modal(document.getElementById('confirmarChecagemModal'));
@@ -761,92 +767,67 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
         }
 
         // Delegação de eventos para botões de checagem individual
-        document.addEventListener('click', function (e) {
-            // Botões de checagem individual
-            if (e.target.closest('.btn-checar-agora')) {
+        document.querySelectorAll('.btn-checar-agora[data-cliente-id][data-tipo-checagem]').forEach(link => {
+            link.addEventListener('click', function (e) {
                 e.preventDefault();
-                const btn = e.target.closest('.btn-checar-agora');
-                const clienteId = btn.getAttribute('data-cliente-id');
-                const tipoChecagem = btn.getAttribute('data-tipo-checagem');
-                const clienteNome = btn.closest('tr')?.querySelector('td[data-label="Cliente"]')?.textContent || 'Cliente';
+                const clienteId = this.getAttribute('data-cliente-id');
+                const tipoChecagem = this.getAttribute('data-tipo-checagem');
+                const clienteNome = this.closest('tr')?.querySelector('td[data-label="Cliente"]')?.textContent || 'Cliente';
 
-                if (confirm(`Deseja executar a checagem para ${clienteNome}?`)) {
+                if (confirm(`Deseja executar a checagem de ${tipoChecagem === 'status' ? 'status dos aparelhos' : 'detalhes completos'} para ${clienteNome}?`)) {
                     executarChecagem(clienteId, tipoChecagem);
                 }
-            }
-
-            // Botões para checagem em massa
-            if (e.target.matches('#checarStatusMultiplos, #checarDetalhesMultiplos, #checarTodosMultiplos')) {
-                e.preventDefault();
-                const tipoChecagem = e.target.getAttribute('data-tipo-checagem');
-                executarChecagemMultipla(tipoChecagem);
-            }
+            });
         });
 
-        // Apenas UMA definição da função executarChecagem
-        async function executarChecagem(clienteId, tipoChecagem = 'status') {
-            // Encontrar o botão correto com base nos dados do cliente e tipo
-            const btn = document.querySelector(`[data-cliente-id="${clienteId}"][data-tipo-checagem="${tipoChecagem}"]`) ||
-                document.querySelector(`[data-cliente-id="${clienteId}"]`); // Fallback
+        async function executarChecagem(clienteId, tipoChecagem) {
+            const overlay = document.getElementById('loadingOverlay');
+            try {
+                console.log(`Iniciando checagem para clienteId: ${clienteId}, tipoChecagem: ${tipoChecagem}`);
 
-            // Se não encontrou botão, usar um placeholder para feedback
-            const originalHTML = btn ? btn.innerHTML : '';
-            if (btn) {
+                // Mostrar o overlay
+                overlay.style.display = 'flex';
+
+                // Exibe um feedback visual no botão
+                const btn = document.querySelector(`[data-cliente-id="${clienteId}"][data-tipo-checagem="${tipoChecagem}"]`);
+                const originalHTML = btn.innerHTML;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processando...';
                 btn.disabled = true;
-            }
 
-            try {
-                console.log(`Executando checagem para cliente ${clienteId}, tipo ${tipoChecagem}`);
-
+                // Faz a requisição para o servidor
                 const response = await fetch('checagem_executar.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `cliente_id=${clienteId}&tipo_checagem=${tipoChecagem}`
                 });
 
-                const responseText = await response.text();
-                if (!responseText.trim()) {
-                    throw new Error('Resposta vazia do servidor');
+                console.log('Resposta recebida do servidor:', response);
+
+                // Verifica se a resposta foi bem-sucedida
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
                 }
 
-                const data = JSON.parse(responseText);
+                const data = await response.json();
+                console.log('Dados retornados pelo servidor:', data);
+
+                // Verifica se o back-end retornou sucesso
                 if (!data.success) {
                     throw new Error(data.message || 'Erro desconhecido');
                 }
 
-                // Atualizar interface
-                const row = btn ? btn.closest('tr') : document.querySelector(`[data-cliente-id="${clienteId}"]`)?.closest('tr');
-                if (row) {
-                    const statusCell = row.querySelector('td[data-label="Status"]');
-                    const resultadoCell = row.querySelector('td[data-label="Resultado"]');
-                    const dataCell = row.querySelector('td[data-label="Última Checagem"]');
-
-                    if (statusCell) {
-                        const statusClass = data.resultado.status === 'sucesso' ? 'success' :
-                            data.resultado.status === 'erro' ? 'danger' : 'warning';
-                        statusCell.innerHTML = `<span class="badge bg-${statusClass}">${data.resultado.status}</span>`;
-                    }
-
-                    if (resultadoCell && data.resultado.resumo) {
-                        resultadoCell.textContent = data.resultado.resumo;
-                    }
-
-                    if (dataCell) {
-                        const agora = new Date();
-                        const dataFormatada = agora.toLocaleDateString('pt-BR') + ' ' +
-                            agora.toLocaleTimeString('pt-BR').substring(0, 5);
-                        dataCell.textContent = dataFormatada;
-                    }
-                }
-
-                mostrarToast('Checagem realizada com sucesso!', 'success');
+                // Atualiza a interface com os resultados
+                alert('Checagem realizada com sucesso!');
+                location.reload(); // Recarrega a página para atualizar os dados
             } catch (error) {
                 console.error('Erro na checagem:', error);
-                mostrarToast(`Falha na checagem: ${error.message}`, 'danger');
+                alert(`Erro ao executar a checagem: ${error.message}`);
             } finally {
+                // Ocultar o overlay
+                overlay.style.display = 'none';
+
+                // Restaura o botão ao estado original
+                const btn = document.querySelector(`[data-cliente-id="${clienteId}"][data-tipo-checagem="${tipoChecagem}"]`);
                 if (btn) {
                     btn.innerHTML = originalHTML;
                     btn.disabled = false;
@@ -1203,3 +1184,18 @@ $clientes = aplicarBuscaGlobal(null, 'nome', $clientes);
     </div>`;
     }
 </script>
+<div id="loadingOverlay"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1050; align-items: center; justify-content: center; flex-direction: column;">
+    
+    <!-- Texto e ícone -->
+    <div style="color: white; text-align: center; margin-bottom: 20px; font-size: 1.25rem;">
+        <i class="fas fa-search fa-shake" style="margin-right: 10px;"></i> <!-- ícone com efeito animado -->
+        Checagem em andamento, por favor aguarde...
+    </div>
+
+    <!-- Rodinha girante -->
+    <div class="spinner-border text-light" role="status">        
+        <span class="visually-hidden">Carregando...</span>
+    </div>
+</div>
+<?php include '../includes/footer.php'; ?>

@@ -111,3 +111,6 @@ CREATE TABLE `conexoes` (
   KEY `cliente_id` (`cliente_id`),
   CONSTRAINT `conexoes_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- criar admin
+insert into usuarios (nome,email,senha,tipo,ativo)values('admin','admin@admin.co','$2y$10$QeC6IsKkuf7Ho/GZZo4MdeBJEiesUQmMeYdUicUeec0yUoxOoJhOS','master',true);
